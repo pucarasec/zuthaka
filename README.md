@@ -1,157 +1,79 @@
-<!-- PROJECT SHIELDS -->
+---
+description: >-
+  A collaborative free open-source Command & Control development framework that
+  allows developers to concentrate on the core function and goal of their C2.
+---
 
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
-[![LinkedIn][linkedin-shield]][linkedin-url]
-
-
-
-<!-- PROJECT LOGO -->
-<br />
-<p align="center">
-  <a href="https://github.com/pucarasec/zuthaka">
-    <img src="img/zuthaka-logo.png" alt="Logo"
-  </a>
-
-  <h3 align="center">Zuthaka</h3>
-
-  <p align="center">
-  An universal C2 integration tool with a strong computer control interface. With the capability of reutilizing listeners, launching and post-exploitation modules of the integration targets<br/>
-    <a href="https://docs.zuthaka.com"><strong>Explore the docs »</strong></a>
-    <br />
-    <br />
-    <a href="https://demo.zuthaka.com">View Demo</a>
-    ·
-    <a href="https://github.com/pucarasec/zuthaka/issues">Report Bug</a>
-    ·
-    <a href="https://github.com/pucarasec/zuthaka/issues">Request Feature</a>
-  </p>
-</p>
-
-<!-- TABLE OF CONTENTS -->
-## Table of Contents
-
-* [About the Project](#about-the-project)
-  * [Feature](#features)
-  * [Built With](#built-with)
-* [Getting Started](#getting-started)
-  * [Prerequisites](#prerequisites)
-  * [Installation](#installation)
-* [Usage](#usage)
-* [Roadmap](#roadmap)
-* [Contributing](#contributing)
-* [License](#license)
-* [Contact](#contact)
-* [Acknowledgements](#acknowledgements)
+# Zuthaka
 
 
 
-<!-- ABOUT THE PROJECT -->
-## About The Project
-Zuthaka is an open-source application designed to assist red-teaming efforts, by simplifying the task of managing different APTs and other post-exploitation tools. It will feature a front end that will show the common features of every tool, together with a list of the current owned assets and its properties, and a backend that will have different adaptors that will connect to each APT. The front end will also feature a user-friendly way of creating each implant, simplifying in a unified way the deployment of new red-teaming assessments.
+![](.img/variables-imagotipo-a-full-color-zuthaka-f-.png)
 
 
-[![Product Name Screen Shot][product-screenshot]](https://zuthaka.com)
 
+## Problem Statement
 
-### Features 
+The current C2s ecosystem has rapidly grown in order to adapt to modern red team operations and diverse needs \(further information on C2 selection can be found [here](https://www.thec2matrix.com/)\). This comes with a lot of overhead work for Offensive Security professionals everywhere. Creating a C2 is already a demanding task, and most C2s available lack an intuitive and easy to use web interface. Most Red Teams must independently administer and understand each C2 in their infrastructure.
 
-* A user-friendly frontend with a gentle learning curve.
-* Agents
-* Multi-User
-* Multi-Tennant
-* Privilege segmentation for users
-* API Conecters
-* Cross-platform with easy implementation
-* Protocols of communication :  HTTP(DNS,DoH, FTP, IMAP, MAPI, SMB)
-* Key Enchange – one of the following ( RSA, AES , TLS )
-* Easy implementation of domain fronting
-* Custom Profiles
-* Jitter – set the agent to sleep for the particular interval,
-* Working Hours  - list the current agent workinghours, or set working hours (24hour format)
-* Kill Date – when agent is no longer available
-* Chaining  
-* Logging
+## Solution
 
-### First Integrations
+With the belief that community efforts surpass that of any individual, Zuthaka presents a simplified API for fast and clear integration of C2s and provides a centralized management for multiple C2 instances through a unified interface for Red Team operations.
 
-* [Covenant](https://github.com/cobbr/Covenant)
-* [Empire](https://github.com/BC-SECURITY/Empire)
+Zuthaka is more than just a collection of C2s, it is also a solid foundation that can be built upon and easily customized to meet the needs of the exercise that needs to be accomplish. This integration and  development framework for C2 allows developers to concentrate on a unique target environment and not have to reinvent the wheel.
+
+![Zuthaka Framework](.img/draw-infrastructure.jpg)
+
+### Features
+
+* Zuthaka aims to be as flexible as the Red team needs in handling C2s, integrating it to whatever C2 is being use by implementing a handler class for the corresponding C2s.
+* Graphic FileManager for Agent's handling with "out of the box" integration for listing and navigation.
+* Graphic ProcessManager for Agent's handling with "out of the box" integration for listing and terminating.
 
 ### Built With
 
 * [Django Rest Framework](https://www.django-rest-framework.org/)
+* [Redis](https://redis.io/)
 * [ReactJS](https://reactjs.org)
+* [Nginx](https://www.nginx.com/)
 * [Docker](https://www.docker.com/)
 * [PostgreSQL](https://www.postgresql.org//)
 
+## Changelog
 
-<!-- GETTING STARTED -->
-## Getting Started
+### Unreleased                                        
 
-TBA
+#### Added
 
-### Prerequisites
+* service instantiation of C2
+* service creation of listeners
+* service deletion of listeners
 
-TBA
+#### Roadmap
 
-### Installation
+* service download of launchers
+* service agent integration
+* service usage of post-exploitation modules
+* Automatic database collection of handler classes
+* "out of the box" listing of ProcessManager and FileManager
 
-TBA
-
-<!-- USAGE EXAMPLES -->
-## Usage
-
-TBA
-
-<!-- ROADMAP -->
-## Roadmap
-
-TBA
-
-<!-- CONTRIBUTING -->
-## Contributing
-
-TBA
-
-
-<!-- LICENSE -->
 ## License
 
-TBA
+Pucara Information Security  is pleased to support the open source community by making Zuthaka available.
 
-<!-- CONTACT -->
+Copyright \(C\) 2021 Zuthaka , a Pucara Information Security company. All rights reserved. If you have downloaded a copy , please note that the Zuthaka is licensed under the BSD 3-Clause License. Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES \(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION\) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT \(INCLUDING NEGLIGENCE OR OTHERWISE\) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
+
 ## Contact
 
-Your Name - [@pucarasec](https://twitter.com/pucarasec) - contact@pucarasec.com
+Your Name - [@pucara](https://twitter.com/pucarasec) - contact@pucara.io
 
-Project Link: [https://github.com/pucarasec/zuthaka](https://github.com/your_username/repo_name)
+Project Link: [https://github.com/pucarasec/zuthaka](https://github.com/pucarasec/zuthaka)
 
-
-
-<!-- ACKNOWLEDGEMENTS -->
-## Acknowledgements
-
-TBA
-
-
-
-
-<!-- MARKDOWN LINKS & IMAGES -->
-<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/othneildrew/Best-README-Template.svg?style=flat-square
-[contributors-url]: https://github.com/othneildrew/Best-README-Template/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/othneildrew/Best-README-Template.svg?style=flat-square
-[forks-url]: https://github.com/othneildrew/Best-README-Template/network/members
-[stars-shield]: https://img.shields.io/github/stars/othneildrew/Best-README-Template.svg?style=flat-square
-[stars-url]: https://github.com/othneildrew/Best-README-Template/stargazers
-[issues-shield]: https://img.shields.io/github/issues/othneildrew/Best-README-Template.svg?style=flat-square
-[issues-url]: https://github.com/othneildrew/Best-README-Template/issues
-[license-shield]: https://img.shields.io/github/license/othneildrew/Best-README-Template.svg?style=flat-square
-[license-url]: https://github.com/othneildrew/Best-README-Template/blob/master/LICENSE.txt
-[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=flat-square&logo=linkedin&colorB=555
-[linkedin-url]: https://linkedin.com/pucarasec/
-[product-screenshot]: img/zuthaka-flowdiagram.png

@@ -3,14 +3,14 @@ version: '3.0'
 services:
   zuthaka:
     build:
-      context: ./Zuthaka
+      context: .
     network_mode: host
     command: gunicorn zuthaka.wsgi:application --bind 0.0.0.0:8080
     container_name: Zuthaka_backend
   redis:
     image: redis:5
     network_mode: host
-    ports: 6379:6379
+  # ports: 6379:6379
   nginx:
     image: nginx:1.19
     network_mode: host

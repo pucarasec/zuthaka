@@ -1,0 +1,20 @@
+[
+    {
+        "model": "auth.user",
+        "pk": 1,
+        "fields": {
+            "password": "pbkdf2_sha256$216000$ppQvnp55qnFq$m9RNkVkRxlPtyvIyBM1H1CuVgOwatnEscxzYfNMDao8=",
+            "last_login": "2021-01-04T20:19:29.586Z",
+            "is_superuser": true,
+            "username": "pucara",
+            "first_name": "",
+            "last_name": "",
+            "email": "",
+            "is_staff": true,
+            "is_active": true,
+            "date_joined": "1986-06-22T12:55:22.149Z",
+            "groups": [],
+            "user_permissions": []
+        }
+   }
+]

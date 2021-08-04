@@ -1,0 +1,14 @@
+django
+djangorestframework
+django-cors-headers
+ipython
+pytest-django
+requests
+django-filter
+channels
+channels_redis
+gunicorn==20.0.4
+django_extensions
+aiohttp
+pytest-asyncio
+django-staticfiles

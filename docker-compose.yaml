@@ -5,15 +5,16 @@ services:
     build:
       context: .
     network_mode: host
-    command: gunicorn zuthaka.wsgi:application --bind 0.0.0.0:8080
+    user: pucara
+    command: gunicorn zuthaka.wsgi:application --bind 127.0.0.1:8080
     container_name: Zuthaka_backend
   redis:
     image: redis:5
     network_mode: host
-  # ports: 6379:6379
   nginx:
     image: nginx:1.19
-    network_mode: host
+    ports:
+      - 80:80
     volumes:
       - ./Volumes/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./Volumes/build:/frontend/build

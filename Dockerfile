@@ -29,3 +29,5 @@ WORKDIR /Zuthaka/zuthaka
 RUN python manage.py runscript reset_loaded_db
 RUN python manage.py collectstatic
 
+RUN ln -sf /dev/stdout /Zuthaka/zuthaka/zuthaka.log \
+    && ln -sf /dev/stderr /Zuthaka/zuthaka/zuthaka.log

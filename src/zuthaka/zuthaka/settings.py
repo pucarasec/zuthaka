@@ -99,7 +99,7 @@ TEMPLATES = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': BASE_DIR / 'Data/db.sqlite3',
     }
 }
 
@@ -146,7 +146,7 @@ STATIC_ROOT = os.path.join(PROJECT_ROOT,'staticfiles')
 
 CORS_ORIGIN_ALLOW_ALL = True
 
-MEDIA_ROOT =  BASE_DIR.joinpath('files/')
+MEDIA_ROOT =  BASE_DIR.joinpath('Data/files/')
 
 APPEND_SLASH = False
 

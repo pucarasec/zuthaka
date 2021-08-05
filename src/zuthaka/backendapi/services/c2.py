@@ -91,7 +91,6 @@ class C2(ABC):
     
     @classmethod
     def validate_options(cls, options: Options) -> bool:
-        logger.debug('cls.registered_options: %r ', cls.registered_options )
         logger.debug('options: %s', options)
         for  option in cls.registered_options:
             if option.name not in options:

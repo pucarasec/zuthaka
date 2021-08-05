@@ -46,6 +46,7 @@ A collaborative free open-source Command & Control integration framework that al
         <li><a href="#built-with">Built With</a></li>
       </ul>
     </li>
+    <li><a href="#already-supported-c2">Already Supported C2</a></li>
     <li>
       <a href="#getting-started">Getting Started</a>
       <ul>
@@ -59,7 +60,6 @@ A collaborative free open-source Command & Control integration framework that al
     <li><a href="#contact">Contact</a></li>
   </ol>
 </details>
-
 
 
 ## About the project
@@ -84,9 +84,15 @@ Zuthaka is more than just a collection of C2s, it is also a solid foundation tha
 * [PostgreSQL](https://www.postgresql.org//)
 
 
+## Already Supported C2 
+
+* Covenant
+* Empire
+
 ## Getting Started
 
 Zuthaka is composed of a front-end that exposes a UI for the API of process manager, file manager, shell post-exploitation modules and general C2 handling, and a back-end, in charge of handling the consistency and availability issues of the C2s instantiated in Zuthaka. Also deployed is Redis as a message broker to handle asynchronously every element in the Agent's UI and an Nginx server.
+
 
 ### Prerequisites
 

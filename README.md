@@ -139,7 +139,7 @@ Distributed under the BSD-3 clause License. See `LICENSE.md` for more informatio
 
 Pucara team - [@pucara](https://twitter.com/pucara) - contant@pucara.io
 
-Zuthaka community on discord - [Zuthaka](https://discord.gg/2wwBJR8ksn)
+Zuthaka community on discord - [Zuthaka](https://zuthaka.com/discord)
 
 Project Link: [https://github.com/pucarasec/zuthaka](https://github.com/pucarasec/zuthaka)
 

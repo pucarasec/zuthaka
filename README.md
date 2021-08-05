@@ -12,7 +12,7 @@
     <img alt="contact" src="https://img.shields.io/twitter/follow/pucara?style=social">
   </a>
   <a href="https://github.com/pucarasec/zuthaka/issues">
-    <img alt="GitHub issues" src="https://img.shields.io/github/issues/pucara/zuthaka">
+    <img alt="GitHub issues" src="https://img.shields.io/github/issues/pucarasec/zuthaka">
   </a>
 
 </div>

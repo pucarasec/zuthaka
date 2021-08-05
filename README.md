@@ -106,6 +106,8 @@ docker-compose up
 
 ## Usage
 
+![Demogif](https://github.com/pucarasec/zuthaka/raw/main/.img/demozuthaka.gif)
+
 After de solution is deployed, the available class handlers will be incorporated on zuthaka for you to use it to integrate your infrastructure.
 
 _For further information, please refer to the [Documentation](https://docs.zuthaka.com)_
@@ -137,7 +139,7 @@ Distributed under the BSD-3 clause License. See `LICENSE.md` for more informatio
 
 Pucara team - [@pucara](https://twitter.com/pucara) - contant@pucara.io
 
-Zuthaka community on discord - [Zuthaka](https://discord.gg/2wwBJR8ksn)
+Zuthaka community on discord - [Zuthaka](https://zuthaka.com/discord)
 
 Project Link: [https://github.com/pucarasec/zuthaka](https://github.com/pucarasec/zuthaka)
 

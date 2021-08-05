@@ -106,6 +106,8 @@ docker-compose up
 
 ## Usage
 
+![Demogif](https://github.com/pucarasec/zuthaka/raw/main/.img/demozuthaka.gif)
+
 After de solution is deployed, the available class handlers will be incorporated on zuthaka for you to use it to integrate your infrastructure.
 
 _For further information, please refer to the [Documentation](https://docs.zuthaka.com)_

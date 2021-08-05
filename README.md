@@ -41,6 +41,8 @@ A collaborative free open-source Command & Control integration framework that al
     <li>
       <a href="#about-the-project">About The Project</a>
       <ul>
+        <li><a href="#problem-statement">Problem statement</a></li>
+        <li><a href="#solution">Solution</a></li>
         <li><a href="#built-with">Built With</a></li>
       </ul>
     </li>
@@ -53,22 +55,19 @@ A collaborative free open-source Command & Control integration framework that al
     </li>
     <li><a href="#usage">Usage</a></li>
     <li><a href="#roadmap">Roadmap</a></li>
-    <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
     <li><a href="#contact">Contact</a></li>
-    <li><a href="#acknowledgements">Acknowledgements</a></li>
   </ol>
 </details>
 
 
 
-
-## Problem Statement
-There are many great README templates available on GitHub, however, I didn't find one that really suit my needs so I created this enhanced one. I want to create a README template so amazing that it'll be the last one you ever need -- I think this is it.
+## About the project
+### Problem Statement
 
 The current C2s ecosystem has rapidly grown in order to adapt to modern red team operations and diverse needs \(further information on C2 selection can be found [here](https://www.thec2matrix.com/)\). This comes with a lot of overhead work for Offensive Security professionals everywhere. Creating a C2 is already a demanding task, and most C2s available lack an intuitive and easy to use web interface. Most Red Teams must independently administer and understand each C2 in their infrastructure.
 
-## Solution
+### Solution
 
 With the belief that community efforts surpass that of any individual, Zuthaka presents a simplified API for fast and clear integration of C2s and provides a centralized management for multiple C2 instances through a unified interface for Red Team operations.
 

@@ -30,6 +30,7 @@ A collaborative free open-source Command & Control integration framework that al
     <a href="https://github.com/pucarasec/zuthaka/issues">Report Bug</a>
     ·
     <a href="https://github.com/pucarasec/zuthaka/issues">Request Feature</a>
+    ·
   </p>
 </p>
 

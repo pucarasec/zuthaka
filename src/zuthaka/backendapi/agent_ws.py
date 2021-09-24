@@ -138,6 +138,12 @@ async def parser_bash_list_directory(result):
                      'additional_info': element})
     return parsed_result
 
+async def parse_directory(directory, shell_type):
+    # HOME_LISTING_DIRECTORY = {"bash":"/home/", "cmd":"$HOMEPATH/","powershell":"$HOMEPATH/"}
+
+    HOME_LISTING_DIRECTORY = {"bash":"/home/", "cmd":"C:/Users/","powershell":"C:/Users/"}
+    new_directory = directory.replace('$ZUTHAKAHOME$', HOME_LISTING_DIRECTORY[shell_type])
+    return new_directory 
 
 class AgentWs():
     '''
@@ -184,8 +190,9 @@ class AgentWs():
         # notes
         # {'type': 'file_manager.download', 'file_path':'C:\\Users'}
         dto = copy(self.agent_dto)
-        dto['file_path'] = file_path
-        logger.info("file to download: %r", file_path)
+        new_file_path = await parse_directory(file_path, self.agent_model.shell_type)
+        dto['file_path'] = new_file_path
+        logger.info("file to download: %r", new_file_path)
         service = Service.get_service()
         response = await service.download_agents_file(dto)
         return response
@@ -220,13 +227,13 @@ class AgentWs():
 
     async def list_directory(self, directory):
         shell_listing_dictionary = {
-            "bash": ("ls -AlL --time-style=long-iso {}", parser_bash_list_directory, "/home/"),
-            "cmd": ("dir /-c/q/a/o/t:w/n {}", parser_cmd_list_directory, "$HOMEPATH") ,
+            "bash": ("ls -AlL --time-style=long-iso {}", parser_bash_list_directory),
+            "cmd": ("dir /-c/q/a/o/t:w/n {}", parser_cmd_list_directory) ,
             # "powershell": ("gci -Force  {} | Select-Object Mode,LastWriteTimeUtc, Length, Name | ConvertTO-CSV -NoTypeInformation ", parser_powershell_list_directory)
-            "powershell": ("gci -Force {} | Select Mode,Length, @{{Name=\"LastWriteTimeUtc\"; Expression={{$_.LastWriteTimeUTC.ToString(\"yyyy-MM-dd HH:mm:ss\")}}}},Name | ConvertTO-CSV -NoTypeInformation ", parser_powershell_list_directory, "$HOMEPATH")
+            "powershell": ("gci -Force {} | Select Mode,Length, @{{Name=\"LastWriteTimeUtc\"; Expression={{$_.LastWriteTimeUTC.ToString(\"yyyy-MM-dd HH:mm:ss\")}}}},Name | ConvertTO-CSV -NoTypeInformation ", parser_powershell_list_directory)
         }
-        directory = directory.replace('$ZUTHAKAHOME$', shell_listing_dictionary[self.agent_model.shell_type][2])
-        command = shell_listing_dictionary['powershell'][0].format(directory)
+        new_directory = await parse_directory(directory, self.agent_model.shell_type)
+        command = shell_listing_dictionary['powershell'][0].format(new_directory)
         parser = shell_listing_dictionary['powershell'][1]
         # logger.debug("command:%r", command)
         response = await self.execute(command)

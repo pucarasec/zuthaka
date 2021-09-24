@@ -3,6 +3,7 @@ import uuid
 import json
 import asyncio
 import os
+import base64
 
 from asgiref.sync import sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
@@ -99,6 +100,7 @@ def complete_task(task):
 @sync_to_async
 def persist_transition_file(task, file_path, content):
     filename = os.path.basename(file_path)
+    content = base64.b64decode(content)
     cf = ContentFile(content)
     task.transition_file.save(filename, cf)
     task.completed = True

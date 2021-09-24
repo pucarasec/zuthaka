@@ -2,6 +2,8 @@ import asyncio
 import shlex
 from copy import copy
 import datetime
+import base64
+
 
 from asgiref.sync import sync_to_async
 
@@ -145,6 +147,21 @@ async def parse_directory(directory, shell_type):
     new_directory = directory.replace('$ZUTHAKAHOME$', HOME_LISTING_DIRECTORY[shell_type])
     return new_directory 
 
+@sync_to_async
+def dto_encodedfile_to_bytes(dto):
+    content = base64.b64decode(dto['content'])
+    return content
+
+@sync_to_async
+def field_file_to_dto(field_file, dto):
+    name = field_file.name
+    b64_content = '' 
+    with field_file.open(mode='rb') as f:
+        content = f.read()
+        b64_content = base64.b64encode(content)
+    dto.update({'file_name':name, 'file_content': b64_content.decode('utf-8')})
+    return dto
+
 class AgentWs():
     '''
     A simple implementation of the agent, that runs on the local server
@@ -165,29 +182,16 @@ class AgentWs():
         return response
 
     async def upload_file(self, transition_file, target_directory):
-        # notes
         # {'type': 'file_manager.upload', 'target_directory':'C:\\some_path', "reference":"77777-aaaaaaaa-1111-33333333"}
         dto = copy(self.agent_dto)
-        dto['target_directory'] = cmd
-        logger.info("command to execute: %r", cmd)
+        dto['target_directory'] = await parse_directory(target_directory, self.agent_model.shell_type)
+        dto = await field_file_to_dto(transition_file, dto)
+        logger.info("dto to execute: %r", dto)
         service = Service.get_service()
-        response = await service.shell_execute(dto)
+        response = await service.upload_agents_file(dto)
         return response
-        # response = {}
-        # try:
-        #     directory = target_directory + '/' + transition_file.name
-        #     logger.debug("directory:%r", directory)
-        #     with open(directory, 'wb') as created_file:
-        #         created_file.write(transition_file.read())
-        #     response = {'content': "file uploaded"}
-        # except Exception as e:
-        #     logger.exception("error: %r", e)
-        #     # add more specific errors
-        #     response = {'error': "Permission denied"}
-        # return response
 
     async def download_file(self, file_path):
-        # notes
         # {'type': 'file_manager.download', 'file_path':'C:\\Users'}
         dto = copy(self.agent_dto)
         new_file_path = await parse_directory(file_path, self.agent_model.shell_type)
@@ -195,17 +199,8 @@ class AgentWs():
         logger.info("file to download: %r", new_file_path)
         service = Service.get_service()
         response = await service.download_agents_file(dto)
-        return response
-        # response = {}
-        # try:
-        #     with open("/home/lbonastre/Pucara/Demo/Powershell Launcher.ps1") as created_file:
-        #     # with open(file_path) as created_file:
-        #         response = {'content': "file ready to download"}
-        # except Exception as e:
-        #     logger.exception("error: %r", e)
-        #     # add more specific errors
-        #     response = {'error': "Permission denied"}
-        # return response
+        result = await dto_encodedfile_to_bytes(response)
+        return result
 
     async def list_processes(self):
         shell_processes_listing = {

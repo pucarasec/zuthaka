@@ -289,7 +289,7 @@ class AgentsViewSet(ModelViewSet):
             transition_file = request.data.get('file')
             if not transition_file:
                 return Response({'detail': 'file required'}, status=status.HTTP_400_BAD_REQUEST)
-            serializer = AgentTaskSerializer(
+            serializer = AgentTaskEventSerializer(
                 data={'task': task.pk, 'transition_file': transition_file})
             serializer.is_valid(raise_exception=True)
             serializer.save()

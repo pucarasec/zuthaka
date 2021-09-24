@@ -426,7 +426,7 @@ class Service():
                 # retrieve_dto = filter_dict(dto, ['', 'launcher_options'])
                 # retrieve_dto['launcher_internal_id'] = created_launcher.get('launcher_internal_id')
                 downloaded_file =  await asyncio.wait_for(agent_handler.download_file(dto), timeout=10.0)
-                logger.debug('service response dto: %r', dto)
+                logger.debug('service response dto: %r', downloaded_file)
                 response_dto = {}
                 response_dto.update(downloaded_file)
                 return response_dto
@@ -464,7 +464,7 @@ class Service():
                 'agent_internal_id': '123',
                 'target_directory': 'C://Users/'
                 'file_name': 'somefile.txt'
-                'file_content': b'...'
+                'file_content': '<base64 file>'
             }
 
         """
@@ -484,11 +484,9 @@ class Service():
             logger.debug('available agent_types in c2 handler: ', agent_types)
             agent_handler = agent_types[_agent_type]
             try:
-                retrieve_dto = filter_dict(dto, ['listener_internal_id', 'launcher_options'])
-                retrieve_dto['launcher_internal_id'] = created_launcher.get('launcher_internal_id')
-                downloaded_file=  await asyncio.wait_for(agent_handler.download_file(retrieve_dto), timeout=5.0)
+                result_dto=  await asyncio.wait_for(agent_handler.upload_file(dto), timeout=5.0)
                 response_dto = {}
-                response_dto.update(downloaded_file)
+                response_dto.update(result_dto)
                 return response_dto
             except asyncio.TimeoutError:
                 raise ConnectionError

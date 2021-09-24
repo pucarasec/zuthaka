@@ -3,7 +3,6 @@ import uuid
 import json
 import asyncio
 import os
-import base64
 
 from asgiref.sync import sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
@@ -89,6 +88,7 @@ def create_task():
 
 @sync_to_async
 def get_task_file(task):
+    logger.info("task accessing: %r", task)
     task_event = models.AgentTaskEvent.objects.get(task=task.pk)
     return task_event.transition_file
 
@@ -100,7 +100,6 @@ def complete_task(task):
 @sync_to_async
 def persist_transition_file(task, file_path, content):
     filename = os.path.basename(file_path)
-    content = base64.b64decode(content)
     cf = ContentFile(content)
     task.transition_file.save(filename, cf)
     task.completed = True
@@ -237,12 +236,12 @@ class AgentConsumer(AsyncJsonWebsocketConsumer):
     async def file_manager_download(self, event, task):
         # {'type': 'file_manager.download', 'file_path':'C:\\Users'}
         file_path = event.get('file_path')
-        result_dto = await self.agent.download_file(file_path)
-        await persist_transition_file(task, file_path, result_dto.get('content'))
+        file_bytes = await self.agent.download_file(file_path)
+        await persist_transition_file(task, file_path, file_bytes)
         # await complete_task(task) # Task is not completed until downloaded
         response = {'type': 'file_manager.download.result',
                     'reference': task.command_ref}
-        response.update(result_dto)
+        response.update({"content":"file ready to download"})
         await self.send_json(response)
 
     @require_task

@@ -263,13 +263,13 @@ LOGGING = {
     'loggers': {
         'django': {
             'handlers': ['console'],
-            # 'level': 'DEBUG',
+            'level': 'DEBUG',
             'propagate': True,
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO')
         },
         'backendapi': {
             'handlers': ['file'],
-            # 'level': 'DEBUG',
+            'level': 'DEBUG',
             'propagate': True,
             'level': os.getenv('DJANGO_LOG_LEVEL', 'DEBUG')
         },

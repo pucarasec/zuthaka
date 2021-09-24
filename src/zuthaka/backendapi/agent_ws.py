@@ -207,7 +207,7 @@ class AgentWs():
             "powershell": ("tasklist /v /FO:CSV", parser_tasklist_list_process),
             # "powershell": ("Get-Process | Sort-Object Id | Select-Object Id, CPU,HasExited, StartTime, ProcessName | ConvertTo-CSV -NoTypeInformation ", parser_powershell_list_processes)
         }
-        command, parser = shell_processes_listing['powershell']
+        command, parser = shell_processes_listing[self.agent_model.shell_type]
         logger.debug("command:%r", command)
         response = await self.execute(command)
         logger.debug("response:%r", response)
@@ -220,11 +220,12 @@ class AgentWs():
 
     async def list_directory(self, directory):
         shell_listing_dictionary = {
-            "bash": ("ls -AlL --time-style=long-iso {}", parser_bash_list_directory),
-            "cmd": ("dir /-c/q/a/o/t:w/n {}", parser_cmd_list_directory) ,
+            "bash": ("ls -AlL --time-style=long-iso {}", parser_bash_list_directory, "/home/"),
+            "cmd": ("dir /-c/q/a/o/t:w/n {}", parser_cmd_list_directory, "$HOMEPATH") ,
             # "powershell": ("gci -Force  {} | Select-Object Mode,LastWriteTimeUtc, Length, Name | ConvertTO-CSV -NoTypeInformation ", parser_powershell_list_directory)
-            "powershell": ("gci -Force {} | Select Mode,Length, @{{Name=\"LastWriteTimeUtc\"; Expression={{$_.LastWriteTimeUTC.ToString(\"yyyy-MM-dd HH:mm:ss\")}}}},Name | ConvertTO-CSV -NoTypeInformation ", parser_powershell_list_directory)
+            "powershell": ("gci -Force {} | Select Mode,Length, @{{Name=\"LastWriteTimeUtc\"; Expression={{$_.LastWriteTimeUTC.ToString(\"yyyy-MM-dd HH:mm:ss\")}}}},Name | ConvertTO-CSV -NoTypeInformation ", parser_powershell_list_directory, "$HOMEPATH")
         }
+        directory = directory.replace('$ZUTHAKAHOME$', shell_listing_dictionary[self.agent_model.shell_type][2])
         command = shell_listing_dictionary['powershell'][0].format(directory)
         parser = shell_listing_dictionary['powershell'][1]
         # logger.debug("command:%r", command)

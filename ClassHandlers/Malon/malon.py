@@ -297,21 +297,21 @@ class MalwareAgent(AgentType):
                     command_response_json = await response.json()
                     command_output_id = command_response_json.get('id')
 
-            task_status_target = '{}/agents/{}/tasks/{}/result'.format(self._url, dot['agent_internal_id'], command_output_id)
+            task_status_target = '{}/agents/{}/tasks/{}/result'.format(self._url, dto['agent_internal_id'], command_output_id)
             for _ in range(40):
                 async with self._c2.get_session() as session:
                     async with session.get(task_status_target,  headers=headers) as response:
-                        command_response_json = await response.json()
+                        task_result_list = await response.json()
                         for task_result in task_result_list:
                             output_encoded = task_result.get('output')
                             if output_encoded is not None:
                                 logger.info('command_response_json: %r', output_encoded)
-                                response_dto['content'] = base64.b64decode(output_encoded).decode('utf-8')
+                                response_dto['content'] = output_encoded
                                 return response_dto
-                        if status == 'completed':
-                            break
-                        else:
+                        try:
                             await asyncio.sleep(1)
+                        except asyncio.CancelledError:
+                            pass
         except aiohttp.client_exceptions.ClientConnectorError as err:
             raise ConnectionError(err)
 

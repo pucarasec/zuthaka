@@ -87,7 +87,7 @@ def create_task():
 
 @sync_to_async
 def get_task_file(task):
-    logger.info("task accessing: %r", task)
+    # logger.info("task accessing: %r", task)
     task_event = models.AgentTaskEvent.objects.get(task=task.pk)
     return task_event.transition_file
 
@@ -116,13 +116,13 @@ def task_new():
 
 def require_task(func):
     async def task_tracking(*args):
-        logger.info("task_tracking args:%r", args)
+        # logger.info("task_tracking args:%r", args)
         try:
             reference = args[1].pop('reference')
-            logger.debug("task reference:%r", reference)
+            # logger.debug("task reference:%r", reference)
             task = await get_task(reference)
             if not task.completed:
-                logger.debug("func: %r", func)
+                # logger.debug("func: %r", func)
                 await func(*args, task)
             else:
                 await args[0].send_json({'type': 'error',
@@ -171,15 +171,15 @@ class AgentConsumer(AsyncJsonWebsocketConsumer):
         try:
             return json.loads(text_data)
         except json.JSONDecodeError:
-            logger.error('Invalid json: %r', text_data) 
+            # logger.error('Invalid json: %r', text_data) 
             return {'type':'invalid.event'}
 
     async def receive_json(self, event):
-        logger.info('Agent:%s, Received: %s', self, event)
+        # logger.info('Agent:%s, Received: %s', self, event)
         await self.channel_layer.group_send(self.agent_queue, event)
 
     async def send_json(self, content, close=False):
-        logger.info('Agent:%s, Sending: %s', self, content)
+        # logger.info('Agent:%s, Sending: %s', self, content)
         await super().send_json(content, close=close)
 
     async def create_task(self, event):
@@ -194,7 +194,7 @@ class AgentConsumer(AsyncJsonWebsocketConsumer):
     async def shell_execute(self, event, task):
         # {"type":"shell.execute", "command":"ls", "reference":""}
         result = await self.agent.shell_execute(event.get('command'))
-        logger.debug('result: %r', repr(result))
+        # logger.debug('result: %r', repr(result))
         await complete_task(task)
         response = {'type': 'shell.execute.result',
                     'reference': task.command_ref}
@@ -205,12 +205,12 @@ class AgentConsumer(AsyncJsonWebsocketConsumer):
     async def file_manager_list_directory(self, event, task):
         # {"type": "file_manager.list_directory", "directory": "", "reference": ""}
         result = await self.agent.list_directory(event.get('directory'))
-        logger.debug('result: %r', repr(result))
+        # logger.debug('result: %r', repr(result))
         await complete_task(task)
         response = {'type': 'file_manager.list_directory.result',
                     'reference': task.command_ref}
         response.update(result)
-        logger.debug('response: %r', repr(response))
+        # logger.debug('response: %r', repr(response))
         await self.send_json(response)
 
     @require_task
@@ -219,10 +219,10 @@ class AgentConsumer(AsyncJsonWebsocketConsumer):
         result = {}
         try:
             transition_file = await get_task_file(task)
-            logger.info('Uploading transition_file: %r', transition_file)
+            # logger.info('Uploading transition_file: %r', transition_file)
             result = await self.agent.upload_file(transition_file, event.get('target_directory'))
         except Exception as e:
-            logger.exception("testng")
+            # logger.exception("testng")
             result = {
                 'error': 'Unable to retrive file. Please upload the file after generating a task'}
         await complete_task(task)
@@ -247,19 +247,19 @@ class AgentConsumer(AsyncJsonWebsocketConsumer):
     async def process_manager_list(self, event, task):
         # {"type": "file_manager.list_directory", "directory": "", "reference": ""}
         result = await self.agent.list_processes()
-        logger.debug('result: %r', repr(result))
+        # logger.debug('result: %r', repr(result))
         await complete_task(task)
         response = {'type': 'process_manager.list.result',
                     'reference': task.command_ref}
         response.update(result)
-        logger.debug('response: %r', repr(response))
+        # logger.debug('response: %r', repr(response))
         await self.send_json(response)
 
     @require_task
     async def process_manager_terminate(self, event, task):
         result = {}
         try:
-            logger.info('...')
+            # logger.info('...')
             result = await self.agent.process_terminate(event['pid'])
         except KeyError as e:
             result = {
@@ -275,7 +275,7 @@ class AgentConsumer(AsyncJsonWebsocketConsumer):
     async def process_manager_inject(self, event, task):
         result = {}
         try:
-            logger.info('...')
+            # logger.info('...')
             result = await self.agent.process_inject(event['pid'])
         except KeyError as e:
             result = {

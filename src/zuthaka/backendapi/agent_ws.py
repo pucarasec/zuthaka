@@ -65,7 +65,7 @@ async def parser_cmd_list_directory(self, command_result):
     tz = await self.obtain_cmd_time_zone()
     line_re = r"(.{10,10})[ ]{2}(.{8,8})[ ]+([<].+[>]|\d+)[ ]+([^\\]+)([^ ]+)[ ]+(.+)"
     for line in command_result[5:-3]:  # Saco las lineas que no me interesan
-        logger.debug('line to parse: %r', line)
+        # logger.debug('line to parse: %r', line)
         splitted_line = re.search(line_re, line)
         date_time_plus_timezone = (
             splitted_line.groups()[0]
@@ -74,7 +74,7 @@ async def parser_cmd_list_directory(self, command_result):
             + " "
             + tz.group()
         )
-        logger.debug('date_time_plus_timezone, %r', date_time_plus_timezone)
+        # logger.debug('date_time_plus_timezone, %r', date_time_plus_timezone)
         current_dict = {
             "additional_info": line,
             "name": splitted_line.groups()[5],
@@ -104,7 +104,7 @@ async def parser_powershell_list_directory(result):
         # date_time_plus_timezone = datetime.datetime.strptime(
         #     date_time_plus_timezone, datetime_format
         # ).isoformat()
-        logger.debug('row: %r', row)
+        # logger.debug('row: %r', row)
         try: 
             current_row_dict = {
                 "name": row["Name"],
@@ -177,22 +177,22 @@ class AgentWs():
     async def execute(self, cmd):
         dto = copy(self.agent_dto)
         dto['command'] = cmd
-        logger.info("command to execute: %r", cmd)
+        # logger.info("command to execute: %r", cmd)
         service = Service.get_service()
         response = await service.shell_execute(dto)
         return response
     
     async def shell_execute(self, command):
-        logger.debug("command in shell:%r", command)
+        # logger.debug("command in shell:%r", command)
         try:
             response = await self.execute(command)
         except ConnectionError as err:
-            logger.error('Connection error: %r', err, exc_info=True)
+            # logger.error('Connection error: %r', err, exc_info=True)
             response = {"type": "shell.result", "error": "Agent not reachable"}
         except ValueError as err:
-            logger.error('Connection error: %r', err, exc_info=True)
+            # logger.error('Connection error: %r', err, exc_info=True)
             response = {"type": "shell.result", "error": "Agent not reachable"}
-        logger.debug("response:%r", response)
+        # logger.debug("response:%r", response)
         return response
 
     async def upload_file(self, transition_file, target_directory):
@@ -200,7 +200,7 @@ class AgentWs():
         dto = copy(self.agent_dto)
         dto['target_directory'] = await parse_directory(target_directory, self.agent_model.shell_type)
         dto = await field_file_to_dto(transition_file, dto)
-        logger.info("dto to execute: %r", dto)
+        # logger.info("dto to execute: %r", dto)
         service = Service.get_service()
         response = await service.upload_agents_file(dto)
         return response
@@ -210,7 +210,7 @@ class AgentWs():
         dto = copy(self.agent_dto)
         new_file_path = await parse_directory(file_path, self.agent_model.shell_type)
         dto['file_path'] = new_file_path
-        logger.info("file to download: %r", new_file_path)
+        # logger.info("file to download: %r", new_file_path)
         service = Service.get_service()
         response = await service.download_agents_file(dto)
         result = await dto_encodedfile_to_bytes(response)
@@ -224,13 +224,13 @@ class AgentWs():
             # "powershell": ("Get-Process | Sort-Object Id | Select-Object Id, CPU,HasExited, StartTime, ProcessName | ConvertTo-CSV -NoTypeInformation ", parser_powershell_list_processes)
         }
         command, parser = shell_processes_listing[self.agent_model.shell_type]
-        logger.debug("command:%r", command)
+        # logger.debug("command:%r", command)
         response = await self.execute(command)
-        logger.debug("response:%r", response)
+        # logger.debug("response:%r", response)
         content = response.get('content')
         if content:
             result = content.splitlines()
-            logger.debug("result:%r", result)
+            # logger.debug("result:%r", result)
             response['content'] = await parser(result)
         return response
 
@@ -249,7 +249,7 @@ class AgentWs():
         if content:
             result = content.splitlines()
             response['content'] =  await parser(result)
-        logger.debug("response:%r", response)
+        # logger.debug("response:%r", response)
         return response
 
 
@@ -257,12 +257,12 @@ class AgentWs():
         # systeminfo | findstr  /C:”Time Zone” 
         # tz = re.search(r"(-+)+(.){5,5}", tz[0])  # Me devuelve el +- numero
         command = 'systeminfo | findstr  /C:"Time Zone"'
-        logger.debug("command:%r", command)
+        # logger.debug("command:%r", command)
         response = await self.execute(command)
-        logger.debug("response:%r", response)
+        # logger.debug("response:%r", response)
         content = response.get('content').splitlines()
         tz = re.search(r"(-+)+(.){5,5}", content[0])  # Me devuelve el +- numero
-        logger.debug('tz: %r', tz)
+        # logger.debug('tz: %r', tz)
         return tz
 
     async def process_terminate(self, pid):
@@ -273,7 +273,7 @@ class AgentWs():
             "powershell": " Stop-Process -ID {} -Force "
         }
         command = shell_processes_listing['cmd'].format(pid)
-        logger.debug("command:%r", command)
+        # logger.debug("command:%r", command)
         # Local handling is  exceptued
         return {'content': 'process terminated'}
 
@@ -285,7 +285,7 @@ class AgentWs():
             "powershell": "..."
         }
         command = shell_processes_listing['cmd'].format(pid)
-        logger.debug("command:%r", command)
+        # logger.debug("command:%r", command)
         return {'content': 'Functionality not implemented'}
 
     async def post_exploitation_available(self):

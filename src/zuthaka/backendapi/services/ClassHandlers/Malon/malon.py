@@ -1,5 +1,5 @@
 from .. import ResourceExistsError, ResourceNotFoundError
-from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc, PostExploitationType
+from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc
 
 import asyncio
 import random

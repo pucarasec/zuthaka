@@ -251,6 +251,7 @@ class MalwareAgent(AgentType):
 
         """
         try:
+            logger.info('dto: %r', dto)
             target = '{}/agents/{}/tasks'.format(self._url, dto['agent_internal_id'])
 
             command_args =  shlex.split("powershell -Command '{}'".format(dto['command']))
@@ -259,7 +260,6 @@ class MalwareAgent(AgentType):
             command_output_id = ''
             async with self._c2.get_session() as session:
                 async with session.post(target, json=interact_post_data) as response:
-                    logger.info('#RESPONSE %r', response)
                     command_response_json = await response.json()
                     command_output_id = command_response_json.get('id')
             task_status_target = '{}/agents/{}/tasks/{}/result'.format(self._url, dto['agent_internal_id'], command_output_id)
@@ -297,7 +297,7 @@ class MalwareAgent(AgentType):
                     command_response_json = await response.json()
                     command_output_id = command_response_json.get('id')
 
-            task_status_target = '{}/agents/{}/tasks/{}/result'.format(self._url, command_output_id)
+            task_status_target = '{}/agents/{}/tasks/{}/result'.format(self._url, dot['agent_internal_id'], command_output_id)
             for _ in range(40):
                 async with self._c2.get_session() as session:
                     async with session.get(task_status_target,  headers=headers) as response:
@@ -314,5 +314,24 @@ class MalwareAgent(AgentType):
                             await asyncio.sleep(1)
         except aiohttp.client_exceptions.ClientConnectorError as err:
             raise ConnectionError(err)
+
+    async def upload_file(self, dto: Dict[str, Any]) -> bytes:
+        try:
+            target = '{}/agents/{}/tasks'.format(self._url, dto['agent_internal_id'])
+            file_path = dto['target_directory'] + dto['file_name']
+            interact_post_data = {"type": "file", "info": {"type": "put", "file_path": file_path}, "input":dto['file_content']}
+            logger.debug('target: %r, data: %r', target, interact_post_data)
+
+            response_dto = {}
+            command_output_id = ''
+            async with self._c2.get_session() as session:
+                async with session.post(target, json=interact_post_data) as response:
+                    command_response_json = await response.json()
+                    command_output_id = command_response_json.get('id')
+
+        except aiohttp.client_exceptions.ClientConnectorError as err:
+            raise ConnectionError(err)
+
+
 
 

@@ -10,6 +10,7 @@ from asgiref.sync import sync_to_async
 from . import models
 from .serializers import AgentSerializer
 from .services.async_service import Service # this might be a singleto
+from .services.exceptions import ResourceNotFoundError, ResourceExistsError, InconsistencyError
 
 import logging
 import csv
@@ -180,6 +181,19 @@ class AgentWs():
         service = Service.get_service()
         response = await service.shell_execute(dto)
         return response
+    
+    async def shell_execute(self, command):
+        logger.debug("command in shell:%r", command)
+        try:
+            response = await self.execute(command)
+        except ConnectionError as err:
+            logger.error('Connection error: %r', err, exc_info=True)
+            response = {"type": "shell.result", "error": "Agent not reachable"}
+        except ValueError as err:
+            logger.error('Connection error: %r', err, exc_info=True)
+            response = {"type": "shell.result", "error": "Agent not reachable"}
+        logger.debug("response:%r", response)
+        return response
 
     async def upload_file(self, transition_file, target_directory):
         # {'type': 'file_manager.upload', 'target_directory':'C:\\some_path', "reference":"77777-aaaaaaaa-1111-33333333"}
@@ -278,36 +292,48 @@ class AgentWs():
         return {'content': 'Functionality not implemented'}
 
     async def post_exploitation_available(self):
-        # this should be db based
-        available_list = [{
-            'name':'portScan',  
-            'description':'Scan the target host for open ports', 
-            'options_description':[
-                    {
-                    'name':'target',
-                    'type': 'string',
-                    'default_value':'127.0.0.1',
-                    'description': 'Target to scan for open ports',
-                    'example':'192.168.0.1',
-                    'required':True
-                    },
-                    {
-                    'name':'ports',
-                    'type': 'string',
-                    'default_value':'80,443,8080,8443',
-                    'description': 'Ports to scan on the target',
-                    'example':'1-65535',
-                    'required':True
-                    }
-                ],
-            'id_module': 1 },
-            {'name':'Screenshot',  
-            'description':'take screenshot from computer', 
-            'options_description':[],
-            'id_module': 2 },
-
-            ] 
+        service = Service.get_service()
+        dto = copy(self.agent_dto)
+        available_list = await service.get_available_post_exploitation_modules(dto)
         return {'content': available_list}
+
+        # this should be db based
+        # available_list = [{
+        #     'name':'portScan',  
+        #     'description':'Scan the target host for open ports', 
+        #     'options_description':[
+        #             {
+        #             'name':'target',
+        #             'type': 'string',
+        #             'default_value':'127.0.0.1',
+        #             'description': 'Target to scan for open ports',
+        #             'example':'192.168.0.1',
+        #             'required':True
+        #             },
+        #             {
+        #             'name':'ports',
+        #             'type': 'string',
+        #             'default_value':'80,443,8080,8443',
+        #             'description': 'Ports to scan on the target',
+        #             'example':'1-65535',
+        #             'required':True
+        #             }
+        #         ],
+        #     'id_module': 1 },
+        #     {'name':'Screenshot',  
+        #     'description':'take screenshot from computer', 
+        #     'options_description':[
+        #             {
+        #             'name':'target',
+        #             'type': 'string',
+        #             'default_value':'127.0.0.1',
+        #             'description': 'Target to scan for open ports',
+        #             'example':'192.168.0.1',
+        #             'required':True
+        #             },
+        #           ],
+        #     'id_module': 1 },
+        #     ] 
 
     async def post_exploitation_execute(self, id_module, options):
         #isinstance(pid, int) # to do safety check

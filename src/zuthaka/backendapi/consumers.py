@@ -11,7 +11,6 @@ from django.core.files.base import ContentFile
 
 from . import models
 from .agent_ws import AgentWs
-# from .local_agents import LocalAgent
 
 logger = logging.getLogger(__name__)
 '''
@@ -194,7 +193,7 @@ class AgentConsumer(AsyncJsonWebsocketConsumer):
     @require_task
     async def shell_execute(self, event, task):
         # {"type":"shell.execute", "command":"ls", "reference":""}
-        result = await self.agent.execute(event.get('command'))
+        result = await self.agent.shell_execute(event.get('command'))
         logger.debug('result: %r', repr(result))
         await complete_task(task)
         response = {'type': 'shell.execute.result',
@@ -295,6 +294,7 @@ class AgentConsumer(AsyncJsonWebsocketConsumer):
         response = {'type': 'post_exploitation.available.result',
                     'reference': task.command_ref}
         response.update(result)
+        print('OBTEINDED RESPONSE %r', response)
         await self.send_json(response)
 
     @require_task

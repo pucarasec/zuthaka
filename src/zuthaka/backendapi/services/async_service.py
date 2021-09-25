@@ -367,7 +367,7 @@ class Service():
             logger.debug('agent_types: %r', agent_types)
             agent_handler = agent_types[_agent_type]
             try:
-                shell_result =  await asyncio.wait_for(agent_handler.shell_execute(dto), timeout=10.0)
+                shell_result =  await asyncio.wait_for(agent_handler.shell_execute(dto), timeout=20.0)
                 logger.debug(shell_result)
                 response_dto = {}
                 response_dto.update(shell_result)
@@ -555,3 +555,33 @@ class Service():
         """
         pass
 
+    async def get_available_post_exploitation_modules(self, dto: Dict[str, Any]) -> Dict[str,Any]:
+        """
+            retrives available post exploitation modules 
+                raises ValueError in case of invalid dto
+                raises ConectionError in case of not be able to connect to c2 instance
+                raises ResourceNotFoundError 
+        """
+        _c2_type = dto.get('c2_type')
+        current_c2_handler = self._c2types[_c2_type]
+        _c2_options = dto.get('c2_options')
+        current_c2 = current_c2_handler(_c2_options)
+
+        logger.debug('received dto: %r', dto)
+        
+        _agent_type = dto.get('agent_type', 'powershell')
+        agent_types = await current_c2.get_agent_types()
+        logger.debug('available agent_types in c2 handler: ', agent_types)
+        agent_handler = agent_types[_agent_type]
+
+        try:
+            result_dto=  await asyncio.wait_for(agent_handler.get_available_post_exploitation_modules(), timeout=5.0)
+            response_dto = {}
+            response_dto.update(result_dto)
+            return response_dto
+        except asyncio.TimeoutError:
+            raise ConnectionError
+        except KeyError as err:
+            raise ValueError('invalid_dto %r',err)
+        except KeyError as err:
+            raise ValueError('Handler not found: {!r}'.format(err))

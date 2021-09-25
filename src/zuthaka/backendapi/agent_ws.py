@@ -242,15 +242,12 @@ class AgentWs():
             "powershell": ("gci -Force {} | Select Mode,Length, @{{Name=\"LastWriteTimeUtc\"; Expression={{$_.LastWriteTimeUTC.ToString(\"yyyy-MM-dd HH:mm:ss\")}}}},Name | ConvertTO-CSV -NoTypeInformation ", parser_powershell_list_directory)
         }
         new_directory = await parse_directory(directory, self.agent_model.shell_type)
-        command = shell_listing_dictionary['powershell'][0].format(new_directory)
-        parser = shell_listing_dictionary['powershell'][1]
-        # logger.debug("command:%r", command)
+        command = shell_listing_dictionary[self.agent_model.shell_type][0].format(new_directory)
+        parser = shell_listing_dictionary[self.agent_model.shell_type][1]
         response = await self.execute(command)
         content = response.get('content')
         if content:
             result = content.splitlines()
-            # logger.debug("result:%r", result)
-
             response['content'] =  await parser(result)
         logger.debug("response:%r", response)
         return response
@@ -297,43 +294,7 @@ class AgentWs():
         available_list = await service.get_available_post_exploitation_modules(dto)
         return {'content': available_list}
 
-        # this should be db based
-        # available_list = [{
-        #     'name':'portScan',  
-        #     'description':'Scan the target host for open ports', 
-        #     'options_description':[
-        #             {
-        #             'name':'target',
-        #             'type': 'string',
-        #             'default_value':'127.0.0.1',
-        #             'description': 'Target to scan for open ports',
-        #             'example':'192.168.0.1',
-        #             'required':True
-        #             },
-        #             {
-        #             'name':'ports',
-        #             'type': 'string',
-        #             'default_value':'80,443,8080,8443',
-        #             'description': 'Ports to scan on the target',
-        #             'example':'1-65535',
-        #             'required':True
-        #             }
-        #         ],
-        #     'id_module': 1 },
-        #     {'name':'Screenshot',  
-        #     'description':'take screenshot from computer', 
-        #     'options_description':[
-        #             {
-        #             'name':'target',
-        #             'type': 'string',
-        #             'default_value':'127.0.0.1',
-        #             'description': 'Target to scan for open ports',
-        #             'example':'192.168.0.1',
-        #             'required':True
-        #             },
-        #           ],
-        #     'id_module': 1 },
-        #     ] 
+        
 
     async def post_exploitation_execute(self, id_module, options):
         #isinstance(pid, int) # to do safety check

@@ -236,29 +236,6 @@ class AgentType(ABC):
         """
         pass
 
-class PostExploitationType(ABC):
-    async def post_exploitation_execute(self, dto: Dict[str, Any]) -> bytes:
-        pass
-    
-    @classmethod
-    async def to_dto(self):
-        options = getattr(self, 'registered_options', [])
-        dto_options = []
-        for opt in options:
-            dto_options.append({
-                'name' : getattr(self, 'name', ''),
-                'type' : getattr(self, 'type', 'string'),
-                'default_value' : getattr(self, 'default_value', ''),
-                'description' : getattr(self, 'description', ''),
-                'example' : getattr(self, 'example', ''),
-                'required' : getattr(self, 'required', False),
-            })
-        response_dto = {   
-            'name' : getattr(self, 'name', ''),
-            'description' : getattr(self, 'description', ''),
-            'options_description': dto_options,
-            'id_module' : 1
-        }
 
 def sync_save_payload(name, payload):
     with open(name,'wb') as f:

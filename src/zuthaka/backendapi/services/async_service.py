@@ -166,7 +166,8 @@ class Service():
         try:
             if not 'c2_type' in dto or not 'c2_options' in dto :
                 raise ValueError('invalid dto missing c2_type or c2_options')
-            current_c2_handler = self._c2types['c2_type']
+            _c2_type = dto.get('c2_type')
+            current_c2_handler = self._c2types[_c2_type]
             current_c2 = current_c2_handler('c2_options')
 
             listener_types = await current_c2.get_listener_types()

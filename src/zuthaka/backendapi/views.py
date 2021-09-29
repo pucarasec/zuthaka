@@ -133,11 +133,13 @@ class ListenersViewSet(ModelViewSet):
         service = Service.get_service()
         dto = self.serializer_class.to_dto_from_instance(instance)
         try:
+            import ipdb; ipdb.set_trace()
             listener_internal_id = async_to_sync(service.delete_listener)(dto)
             instance.delete()
-        except ValueError:
+        except ValueError as err:
             # Malformed DTO
-            pass
+            logger.error(err)
+            raise serializers.ValidationError(*err.args)
         except ResourceNotFoundError:
             # Inconsistency. to be soft erased
             pass

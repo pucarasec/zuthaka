@@ -6,10 +6,13 @@ services:
       context: .
     network_mode: host
     user: pucara
-    command: gunicorn zuthaka.wsgi:application --bind 127.0.0.1:8080
+    # command: gunicorn zuthaka.wsgi:application --bind 127.0.0.1:8080
+    command: python manage.py runserver 0.0.0.0:8080
     container_name: Zuthaka_backend
     volumes:
       - /Zuthaka/zuthaka/Data
+    depends_on:
+      - redis
   redis:
     image: redis:5
     network_mode: host

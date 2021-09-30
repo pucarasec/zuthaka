@@ -300,7 +300,7 @@ class MalwareAgent(AgentType):
             task_status_target = '{}/agents/{}/tasks/{}/result'.format(self._url, dto['agent_internal_id'], command_output_id)
             for _ in range(40):
                 async with self._c2.get_session() as session:
-                    async with session.get(task_status_target,  headers=headers) as response:
+                    async with session.get(task_status_target) as response:
                         task_result_list = await response.json()
                         for task_result in task_result_list:
                             output_encoded = task_result.get('output')

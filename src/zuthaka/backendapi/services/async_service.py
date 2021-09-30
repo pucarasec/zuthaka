@@ -487,7 +487,7 @@ class Service():
             try:
                 result_dto=  await asyncio.wait_for(agent_handler.upload_file(dto), timeout=5.0)
                 response_dto = {}
-                response_dto.update(result_dto)
+                response_dto.update(result_dto or {})
                 return response_dto
             except asyncio.TimeoutError:
                 raise ConnectionError

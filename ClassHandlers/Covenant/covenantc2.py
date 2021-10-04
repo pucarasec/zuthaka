@@ -112,7 +112,7 @@ class CovenantC2(C2):
             async with self.get_session() as session:
                 async with session.get(target, headers=headers) as response:
                     current_agents = await response.json()
-                    logger.debug('current_agents: %r', current_agents)
+                    logger.debug('current_agents: %r', len(current_agents))
                     for agent in current_agents:
                         new_agent = {}
                         new_agent['first_connection'] = agent['activationTime']
@@ -121,6 +121,7 @@ class CovenantC2(C2):
                         new_agent['username'] = agent['userName']
                         new_agent['internal_id'] = agent['id']
                         new_agent['shell_type'] = 'powershell'
+                        new_agent['active'] = True
                         new_agent['listener_internal_id'] = agent['listenerId']
                         response_dto['agents'].append(new_agent)
                     return response_dto
@@ -261,10 +262,10 @@ class CovenantPowershellLauncherType(LauncherType):
             async with self._c2.get_session() as session:
                 async with session.post(target, headers=headers) as response:
                     response_dict = await response.json()
-                    logger.debug('[*] response_dict: %r ',
-                                 response_dict.keys())
+                    # logger.debug('[*] response_dict: %r ',  response_dict.keys())
                     response_dto['payload_content'] = response_dict["encodedLauncherString"]
                     response_dto['payload_name'] = response_dict["name"]
+                    logger.debug('[*] payload_name: %r ',  response_dict['name'])
                     return response_dto
         except aiohttp.client_exceptions.ClientConnectorError as err:
             raise ConnectionError(err)

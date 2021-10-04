@@ -287,13 +287,17 @@ class LauncherSerializer(serializers.ModelSerializer):
     options = LauncherOptionSerializer(many=True)
     listener_id = serializers.PrimaryKeyRelatedField(
         source='listener', queryset=Listener.objects.all(), read_only=False)
+    file_name =  serializers.SerializerMethodField()
     # launcher_type_id = serializers.PrimaryKeyRelatedField(source='launcher_type',queryset=LauncherType.objects.all(),read_only=False)
 
     class Meta:
         model = Launcher
         fields = ('id', 'listener_id', 'launcher_type', 
-                  'creation_date', 'options')
-        read_only_fields = ('creation_date',)
+                  'creation_date', 'options', 'file_name')
+        read_only_fields = ('creation_date', 'file_name')
+
+    def get_file_name(self, obj):
+        return obj.launcher_file.name
 
     def create(self, validated_data):
         options = validated_data.pop('options', [])

@@ -134,7 +134,7 @@ def require_task(func):
                                       reference {}'.format(args[1].get('reference'))})
         except KeyError as err:
             # logger.exception("error: %r", err)
-            await args[0].send_json({'type': 'error', 'content': 'invalid event, task refrence needed'})
+            await args[0].send_json({'type': 'error', 'content': 'invalid event, task reference needed'})
     return task_tracking
 
 @sync_to_async

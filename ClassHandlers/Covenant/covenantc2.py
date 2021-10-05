@@ -264,7 +264,7 @@ class CovenantPowershellLauncherType(LauncherType):
                     response_dict = await response.json()
                     # logger.debug('[*] response_dict: %r ',  response_dict.keys())
                     response_dto['payload_content'] = response_dict["encodedLauncherString"]
-                    response_dto['payload_name'] = response_dict["name"]
+                    response_dto['payload_name'] = response_dict["name"] + '.ps1'
                     logger.debug('[*] payload_name: %r ',  response_dict['name'])
                     return response_dto
         except aiohttp.client_exceptions.ClientConnectorError as err:

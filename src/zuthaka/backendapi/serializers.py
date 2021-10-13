@@ -17,6 +17,8 @@ from .models import AgentTask
 from .models import AgentTaskEvent
 from django.contrib.auth.models import User
 
+from .dto import C2Dto, ListenerDto, LauncherDto, GenericDto
+
 
 # C2
 class C2TypeOptionSerializer(serializers.ModelSerializer):
@@ -115,11 +117,15 @@ class C2Serializer(serializers.ModelSerializer):
         }
         '''
         data = self.validated_data 
-        dto = {}
-        if 'c2_type' in data:
-            dto['c2_type'] = data['c2_type'].name
-        if 'options' in data:
-            dto['c2_options'] = {elem['name']:elem['value'] for elem in data['options']}
+        # dto = {}
+        # if 'c2_type' in data:
+        #     dto['c2_type'] = data['c2_type'].name
+        # if 'options' in data:
+            # dto['c2_options'] = {elem['name']:elem['value'] for elem in data['options']}
+        options = {elem['name']:elem['value'] for elem in data['options']}
+        _c2_type = data['c2_type'].name
+        c2_dto = C2Dto(c2_type= _c2_type, options=options)
+        dto = GenericDto(c2_dto= c2_dto)
         return dto
 
 
@@ -214,10 +220,18 @@ class ListenerSerializer(serializers.ModelSerializer):
         data = self.validated_data 
         dto = {}
         try:
-            dto['c2_type'] = data['c2'].c2_type.name
-            dto['c2_options'] = {option.name:option.value for option in data['c2'].options.all()}
-            dto['listener_type'] = data['listener_type'].name
-            dto['listener_options'] = {elem['name']:elem['value'] for elem in data['options']}
+            options =  {option.name:option.value for option in data['c2'].options.all()}
+            _c2_type = data['c2_type'].name
+            c2dto = C2Dto(c2_type= _c2_type, options=options)
+            
+            listener_type = data['listener_type'].name
+            listener_options = {elem['name']:elem['value'] for elem in data['options']}
+            listenerdto = ListenerDto(listener_type= listener_type, options = listener_options)
+            
+            # dto['c2_type'] = data['c2'].c2_type.name
+            # dto['c2_options'] = {option.name:option.value for option in data['c2'].options.all()}
+            # dto['listener_type'] = data['listener_type'].name
+            # dto['listener_options'] = {elem['name']:elem['value'] for elem in data['options']}
         except KeyError as err:
             raise serializers.ValidationError(repr(err))
         return dto

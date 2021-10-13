@@ -20,6 +20,8 @@ logger = logging.getLogger(__name__)
 #from .Empire import EmpireC2
 from .exceptions import ResourceNotFoundError, ResourceExistsError, InconsistencyError
 
+from ...dtos import C2Dto, ListenerDto, LauncherDto, GenericDto
+
 
 def filter_dict(original_dict, set_of_keys):
     new_dict = {}

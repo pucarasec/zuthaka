@@ -239,7 +239,7 @@ class AgentsViewSet(ModelViewSet):
 
     def list(self, request):
         service = Service.get_service()
-        dto = AgentSerializer.to_dto()
+        dto = AgentSerializer.c2_instances_dto()
         try:
             # print(dto)
             agents  = async_to_sync(service.retrieve_agents)(dto)

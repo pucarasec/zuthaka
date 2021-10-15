@@ -177,11 +177,10 @@ class Service():
             # _listener = listener_handler._wrap_listener(internal_id, _listener_options)
 
             try:
-                created_listener =  await asyncio.wait_for(listener_handler.delete(internal_id, _listener_options), timeout=5.0)
-                return created_listener
+                result =  await asyncio.wait_for(listener_handler.delete(internal_id, _listener_options), timeout=5.0)
+                return result
             except asyncio.TimeoutError:
                 raise ConnectionError
-
         except KeyError as err:
             raise ValueError('Handler not found: {!r}'.format(err))
 
@@ -199,29 +198,29 @@ class Service():
             'last_connection' : '', ?UTF? valor por defecto?
 
 
-    example dto:
+        example dto:
 
-        dto = {'c2s_intances':[{
-            'c2_type' :'EmpireC2Type',
-            'c2_id' :1,
-            'c2_options': {
-                    "url": "https://127.0.0.1:7443",
-                    "username": "cobbr",
-                    "password": "NewPassword!"
-                },
-              'listeners_internal_ids' : ['1','2','3'] 
-              }]}
+            dto = {'c2s_intances':[{
+                'c2_type' :'EmpireC2Type',
+                'c2_id' :1,
+                'c2_options': {
+                        "url": "https://127.0.0.1:7443",
+                        "username": "cobbr",
+                        "password": "NewPassword!"
+                    },
+                'listeners_internal_ids' : ['1','2','3'] 
+                }]}
 
-        response_dto = {'agents': [
-            'last_connection' : '',
-            'first_connection' : '',
-            'hostname' : '',
-            'username' : '',
-            'interpreter' : '',
-            'internal_id' : '',
-            'listener_internal_id' : '',
-            'c2_id' : '',
-        ] }
+            response_dto = {'agents': [
+                'last_connection' : '',
+                'first_connection' : '',
+                'hostname' : '',
+                'username' : '',
+                'interpreter' : '',
+                'internal_id' : '',
+                'listener_internal_id' : '',
+                'c2_id' : '',
+            ] }
 
         """
         response_dto = {'agents':[]}
@@ -350,8 +349,6 @@ class Service():
                 'agent_shell_type': 'cmd',
                 'command': 'ls /usr/bin'
             }
-
-
         """
         try:
             _c2_type = dto.get('c2_type')
@@ -407,7 +404,6 @@ class Service():
                 'agent_shell_type': 'cmd',
                 'file_path': 'C://Users/test',
             }
-
         """
         try:
             _c2_type = dto.get('c2_type')
@@ -466,7 +462,6 @@ class Service():
                 'file_name': 'somefile.txt'
                 'file_content': '<base64 file>'
             }
-
         """
         try:
             _c2_type = dto.get('c2_type')

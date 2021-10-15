@@ -14,7 +14,6 @@ import aiohttp
 import requests
 import io
 
-
 class CovenantC2(C2):
     name = 'covenant_integration'
     description = 'Integration demo for presentation'
@@ -360,65 +359,65 @@ class PowershellAgentType(AgentType):
         except aiohttp.client_exceptions.ClientConnectorError as err:
             raise ConnectionError(err)
 
-class PortScan(PostExploitationType):
-    name = 'PosrtScan_integration'
-    description = 'Integration demo for presentation'
-    documentation = 'https://github.com/cobbr/Covenant/wiki/'
-    registered_options = [
-        OptionDesc(
-            name='target',
-            description='ip address of target machine',
-            example='127.0.0.1',
-            field_type='string',
-            required=True
-        ),
-        OptionDesc(
-            name='ports',
-            description='ports to check',
-            example='8443,80',
-            field_type='string',
-            required=True
-        )]
+# class PortScan(PostExploitationType):
+#     name = 'PosrtScan_integration'
+#     description = 'Integration demo for presentation'
+#     documentation = 'https://github.com/cobbr/Covenant/wiki/'
+#     registered_options = [
+#         OptionDesc(
+#             name='target',
+#             description='ip address of target machine',
+#             example='127.0.0.1',
+#             field_type='string',
+#             required=True
+#         ),
+#         OptionDesc(
+#             name='ports',
+#             description='ports to check',
+#             example='8443,80',
+#             field_type='string',
+#             required=True
+#         )]
 
-    async def post_exploitation_execute(self, dto: Dict[str, Any]) -> bytes:
-        """
-        executes a PostExploitation module on the agent  
-           raises ValueError in case of invalid dto
-           raises ConectionError in case of not be able to connect to c2 instance
-           raises ResourceNotFoundError 
+#     async def post_exploitation_execute(self, dto: Dict[str, Any]) -> bytes:
+#         """
+#         executes a PostExploitation module on the agent  
+#            raises ValueError in case of invalid dto
+#            raises ConectionError in case of not be able to connect to c2 instance
+#            raises ResourceNotFoundError 
 
-        """
-        try:
-            headers = {'Authorization': 'Bearer {}'.format(await self._c2._get_token())}
-            target = '{}/api/grunts/{}/interact'.format(
-                self._url, dto['agent_internal_id'])
-            interact_post_data = 'PortScan :"{}"'.format( dto['target'], dto['ports'])
+#         """
+#         try:
+#             headers = {'Authorization': 'Bearer {}'.format(await self._c2._get_token())}
+#             target = '{}/api/grunts/{}/interact'.format(
+#                 self._url, dto['agent_internal_id'])
+#             interact_post_data = 'PortScan :"{}"'.format( dto['target'], dto['ports'])
 
-            response_dto = {}
-            command_output_id = ''
-            async with self._c2.get_session() as session:
-                async with session.post(target, json=interact_post_data, headers=headers) as response:
-                    command_response_json = await response.json()
-                    command_output_id = command_response_json.get('commandOutputId')
+#             response_dto = {}
+#             command_output_id = ''
+#             async with self._c2.get_session() as session:
+#                 async with session.post(target, json=interact_post_data, headers=headers) as response:
+#                     command_response_json = await response.json()
+#                     command_output_id = command_response_json.get('commandOutputId')
 
-            task_status_target = '{}/api/commands/{}'.format(self._url, command_output_id)
-            for _ in range(40):
-                async with self._c2.get_session() as session:
-                    async with session.get(task_status_target,  headers=headers) as response:
-                        command_response_json = await response.json()
-                        status = command_response_json['gruntTasking']['status']
-                        if status == 'completed':
-                            break
-                        else:
-                            await asyncio.sleep(1)
-            else:
-                raise ConnectionError('unable  to retrieve  task')
-            command_output_base_url = '{}/api/commandoutputs/{}'.format( self._url, command_output_id)
-            async with self._c2.get_session() as session:
-                async with session.get(command_output_base_url,  headers=headers) as response:
-                    command_response_json = await response.json()
-                    command_output = command_response_json['output']
-                    response_dto['content'] = command_output
-            return response_dto
-        except aiohttp.client_exceptions.ClientConnectorError as err:
-            raise ConnectionError(err)
+#             task_status_target = '{}/api/commands/{}'.format(self._url, command_output_id)
+#             for _ in range(40):
+#                 async with self._c2.get_session() as session:
+#                     async with session.get(task_status_target,  headers=headers) as response:
+#                         command_response_json = await response.json()
+#                         status = command_response_json['gruntTasking']['status']
+#                         if status == 'completed':
+#                             break
+#                         else:
+#                             await asyncio.sleep(1)
+#             else:
+#                 raise ConnectionError('unable  to retrieve  task')
+#             command_output_base_url = '{}/api/commandoutputs/{}'.format( self._url, command_output_id)
+#             async with self._c2.get_session() as session:
+#                 async with session.get(command_output_base_url,  headers=headers) as response:
+#                     command_response_json = await response.json()
+#                     command_output = command_response_json['output']
+#                     response_dto['content'] = command_output
+#             return response_dto
+#         except aiohttp.client_exceptions.ClientConnectorError as err:
+#             raise ConnectionError(err)

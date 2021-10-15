@@ -17,7 +17,7 @@ from .models import AgentTask
 from .models import AgentTaskEvent
 from django.contrib.auth.models import User
 
-from .dto import C2Dto, ListenerDto, LauncherDto, GenericDto
+from .dto import C2Dto, ListenerDto, LauncherDto, RequestDto
 
 
 # C2
@@ -125,25 +125,21 @@ class C2Serializer(serializers.ModelSerializer):
         options = {elem['name']:elem['value'] for elem in data['options']}
         _c2_type = data['c2_type'].name
         c2_dto = C2Dto(c2_type= _c2_type, options=options)
-        dto = GenericDto(c2_dto= c2_dto)
+        dto = RequestDto(c2 = c2_dto)
         return dto
 
-
 class UserSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'password']
 
 # Listeners
 
-
 class ListenerTypeOptionSerializer(serializers.ModelSerializer):
     type = serializers.CharField(source='field_type')
     class Meta:
         model = ListenerTypeOption
         fields = ('name', 'example', 'description', 'type', 'required')
-
 
 class C2sAvaialbleField(serializers.RelatedField):
     def to_representation(self, value):
@@ -220,14 +216,15 @@ class ListenerSerializer(serializers.ModelSerializer):
         data = self.validated_data 
         dto = {}
         try:
-            options =  {option.name:option.value for option in data['c2'].options.all()}
             _c2_type = data['c2_type'].name
-            c2dto = C2Dto(c2_type= _c2_type, options=options)
+            options =  {option.name:option.value for option in data['c2'].options.all()}
+            c2_dto = C2Dto(c2_type= _c2_type, options=options)
             
             listener_type = data['listener_type'].name
             listener_options = {elem['name']:elem['value'] for elem in data['options']}
-            listenerdto = ListenerDto(listener_type= listener_type, options = listener_options)
+            listener_dto = ListenerDto(listener_type= listener_type, options = listener_options)
             
+            dto = RequestDto(c2= c2_dto, listener= listener)
             # dto['c2_type'] = data['c2'].c2_type.name
             # dto['c2_options'] = {option.name:option.value for option in data['c2'].options.all()}
             # dto['listener_type'] = data['listener_type'].name
@@ -253,12 +250,31 @@ class ListenerSerializer(serializers.ModelSerializer):
         
         dto = {}
         try:
+            # _c2 = C2.objects.get(pk=instance.c2_id)
+
+            # c2_type = _c2.c2_type.name
+            # c2_options = {option.name:option.value for option in _c2.options.all()}
+            # listener_type = instance.listener_type.name
+            # listener_options = {elem.name:elem.value for elem in instance.options.all()}
+            # listener_internal_id = instance.listener_internal_id
+            
             _c2 = C2.objects.get(pk=instance.c2_id)
-            dto['c2_type'] = _c2.c2_type.name
-            dto['c2_options'] = {option.name:option.value for option in _c2.options.all()}
-            dto['listener_type'] = instance.listener_type.name
-            dto['listener_options'] = {elem.name:elem.value for elem in instance.options.all()}
-            dto['listener_internal_id'] = instance.listener_internal_id
+
+            _c2_type = _c2.c2_type.name
+            options = {option.name:option.value for option in _c2.options.all()}
+            c2_dto = C2Dto(c2_type= _c2_type, options=options)
+            
+            listener_type = data['listener_type'].name
+            listener_options = {elem['name']:elem['value'] for elem in data['options']}
+            listener_dto = ListenerDto(listener_type= listener_type, options = listener_options)
+
+            dto = RequestDto(c2= c2_dto, listener= listener)
+            # _c2 = C2.objects.get(pk=instance.c2_id)
+            # dto['c2_type'] = _c2.c2_type.name
+            # dto['c2_options'] = {option.name:option.value for option in _c2.options.all()}
+            # dto['listener_type'] = instance.listener_type.name
+            # dto['listener_options'] = {elem.name:elem.value for elem in instance.options.all()}
+            # dto['listener_internal_id'] = instance.listener_internal_id
         except KeyError as err:
             raise serializers.ValidationError(repr(err))
         return dto
@@ -287,9 +303,6 @@ class LauncherTypeSerializer(serializers.ModelSerializer):
         model = ListenerType
         fields = ('id', 'name', 'available_listeners',
                   'description',  'options')
-
-
-
 
 class LauncherOptionSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
@@ -361,13 +374,20 @@ class LauncherSerializer(serializers.ModelSerializer):
         data = self.validated_data 
         dto = {}
         try:
-            dto['c2_type'] = data['listener'].c2.c2_type.name
-            dto['c2_options'] = {option.name:option.value for option in data['listener'].c2.options.all()}
-            dto['listener_type'] = data['listener'].listener_type.name
-            dto['listener_type'] = data['listener'].listener_type.name
-            dto['listener_internal_id'] = data['listener'].listener_internal_id
-            dto['launcher_type'] = data['launcher_type'].name
-            dto['launcher_options'] = {elem['name']:elem['value'] for elem in data['options']}
+            _c2_type = data['listener'].c2.c2_type.name
+            options = {option.name:option.value for option in data['listener'].c2.options.all()}
+            c2_dto = C2Dto(c2_type= _c2_type, options=options)
+            
+            listener_type = data['listener'].listener_type.name
+            listener_options = {elem['name']:elem['value'] for elem in data['listener'].options.all()}
+            listener_internal_id = data['listener'].listener_internal_id
+            listener_dto = ListenerDto(listener_type= listener_type, options= listener_options, listener_internal_id= listener_internal_id)
+            
+            launcher_type = data['launcher_type'].name
+            launcher_options = {elem['name']:elem['value'] for elem in data['options']}
+            launcher_dto = LauncherDto(launcher_type= launcher_type, options= launcher_options)
+            
+            dto = RequestDto(c2=c2_dto, listener=listener_dto, launcher=launcher_dto)
         except KeyError as err:
             raise serializers.ValidationError(repr(err))
         return dto

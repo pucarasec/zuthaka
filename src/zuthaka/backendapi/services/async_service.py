@@ -59,7 +59,7 @@ class Service():
             cls._instance._c2types = available_c2s_types
         return cls._instance
 
-    async def isalive_c2(self, dto: Dict[str, Any]) -> float:
+    async def isalive_c2(self, dto: C2Dto) -> float:
         """
         tries to connect to the corresponding c2 and returns latency in seconds
 
@@ -79,12 +79,10 @@ class Service():
 
         """
         try:
-            if not 'c2_type' in dto or not 'c2_options' in dto :
-                raise ValueError('invalid dto missing c2_type or c2_options')
-            _c2_type = dto.get('c2_type')
-            _c2_options = dto.get('c2_options')
-            current_c2_handler = self._c2types[_c2_type]
-            current_c2 = current_c2_handler(_c2_options)
+            if not dto.c2_type:
+                raise ValueError('invalid dto missing c2_type')
+            current_c2_handler = self._c2types[dto.c2_type]
+            current_c2 = current_c2_handler(dto.options)
             start_time = time()
             try:
                 is_alive =  await asyncio.wait_for(current_c2.is_alive(), timeout=5.0)
@@ -96,7 +94,7 @@ class Service():
         except KeyError as e:
             raise ValueError('Handler not found: {!r}'.format(e))
 
-    async def create_listener(self, dto: Dict[str, Any]) -> Dict[str, str]:
+    async def create_listener(self, c2_dto: C2Dto) -> Dict[str, str]:
         """
         creates an listener on the corresponding C2 and return an listener_internal_id for the corresponding API
 
@@ -124,16 +122,15 @@ class Service():
         response_dto = {'listener_internal_id' :'123456'}} 
         """
         try:
-            if not 'c2_type' in dto or not 'c2_options' in dto :
-                raise ValueError('invalid dto missing c2_type or c2_options')
-            _c2_type = dto.get('c2_type')
-            current_c2_handler = self._c2types[_c2_type]
-            _c2_options = dto.get('c2_options')
-            current_c2 = current_c2_handler(_c2_options)
+            if not c2_dto.c2_type:
+                raise ValueError('invalid dto missing c2_type')
+            current_c2_handler = self._c2types[c2_dto.c2_type]
+            current_c2 = current_c2_handler(c2_dto.options)
 
-            _listener_type = dto.get('listener_type')
+            if not listener_dto.c2_type:
+                raise ValueError('invalid dto missing listener_type')
             listener_types = await current_c2.get_listener_types()
-            listener_handler = listener_types[_listener_type]
+            listener_handler = listener_types[listener_dto.listener_type]
 
             _listener_options = dto.get('listener_options')
             try:
@@ -498,93 +495,93 @@ class Service():
         except KeyError as err:
             raise ValueError('Handler not found: {!r}'.format(err))
 
-    async def post_exploitation(self, dto: Dict[str, Any]) -> str:
-        """
-        retrives a created launcher using an launcher_internal_id
-           raises ValueError in case of invalid dto
-           raises ConectionError in case of not be able to connect to c2 instance
-           raises ResourceNotFoundError 
+    # async def post_exploitation(self, dto: Dict[str, Any]) -> str:
+    #     """
+    #     retrives a created launcher using an launcher_internal_id
+    #        raises ValueError in case of invalid dto
+    #        raises ConectionError in case of not be able to connect to c2 instance
+    #        raises ResourceNotFoundError 
 
-        example dto:
-            {'c2_type': 'EmpireC2Type',
-            'c2_options': [
-                    {
-                        "name": "url",
-                        "value": "https://127.0.0.1:7443"
-                    },
-                    {
-                        "name": "username",
-                        "value": "cobbr"
-                    },
-                    {
-                        "name": "password",
-                        "value": "NewPassword!"
-                    }
-                ],
-                'agent_internal_id': '123',
-                'module' : 'port_scan',
-                'options': [ {'name': 'target', 'ports':'80,8443'} ]
-                """
-        pass
+    #     example dto:
+    #         {'c2_type': 'EmpireC2Type',
+    #         'c2_options': [
+    #                 {
+    #                     "name": "url",
+    #                     "value": "https://127.0.0.1:7443"
+    #                 },
+    #                 {
+    #                     "name": "username",
+    #                     "value": "cobbr"
+    #                 },
+    #                 {
+    #                     "name": "password",
+    #                     "value": "NewPassword!"
+    #                 }
+    #             ],
+    #             'agent_internal_id': '123',
+    #             'module' : 'port_scan',
+    #             'options': [ {'name': 'target', 'ports':'80,8443'} ]
+    #             """
+    #     pass
 
-    async def post_exploitation_downloadable(self, dto: Dict[str, Any]) -> str:
-        """
-        retrives a created launcher using an launcher_internal_id
-           raises ValueError in case of invalid dto
-           raises ConectionError in case of not be able to connect to c2 instance
-           raises ResourceNotFoundError 
+    # async def post_exploitation_downloadable(self, dto: Dict[str, Any]) -> str:
+    #     """
+    #     retrives a created launcher using an launcher_internal_id
+    #        raises ValueError in case of invalid dto
+    #        raises ConectionError in case of not be able to connect to c2 instance
+    #        raises ResourceNotFoundError 
 
-        example dto:
-            {'c2_type': 'EmpireC2Type',
-            'c2_options': [
-                    {
-                        "name": "url",
-                        "value": "https://127.0.0.1:7443"
-                    },
-                    {
-                        "name": "username",
-                        "value": "cobbr"
-                    },
-                    {
-                        "name": "password",
-                        "value": "NewPassword!"
-                    }
-                ],
-                'agent_internal_id': '123',
-                'module' : [
-                'name': 'screenshot'
+    #     example dto:
+    #         {'c2_type': 'EmpireC2Type',
+    #         'c2_options': [
+    #                 {
+    #                     "name": "url",
+    #                     "value": "https://127.0.0.1:7443"
+    #                 },
+    #                 {
+    #                     "name": "username",
+    #                     "value": "cobbr"
+    #                 },
+    #                 {
+    #                     "name": "password",
+    #                     "value": "NewPassword!"
+    #                 }
+    #             ],
+    #             'agent_internal_id': '123',
+    #             'module' : [
+    #             'name': 'screenshot'
 
-                ]
-        """
-        pass
+    #             ]
+    #     """
+    #     pass
 
-    async def get_available_post_exploitation_modules(self, dto: Dict[str, Any]) -> Dict[str,Any]:
-        """
-            retrives available post exploitation modules 
-                raises ValueError in case of invalid dto
-                raises ConectionError in case of not be able to connect to c2 instance
-                raises ResourceNotFoundError 
-        """
-        _c2_type = dto.get('c2_type')
-        current_c2_handler = self._c2types[_c2_type]
-        _c2_options = dto.get('c2_options')
-        current_c2 = current_c2_handler(_c2_options)
+    # async def get_available_post_exploitation_modules(self, dto: Dict[str, Any]) -> Dict[str,Any]:
+    #     """
+    #         retrives available post exploitation modules 
+    #             raises ValueError in case of invalid dto
+    #             raises ConectionError in case of not be able to connect to c2 instance
+    #             raises ResourceNotFoundError 
+    #     """
+    #     _c2_type = dto.get('c2_type')
+    #     current_c2_handler = self._c2types[_c2_type]
+    #     _c2_options = dto.get('c2_options')
+    #     current_c2 = current_c2_handler(_c2_options)
 
-        logger.debug('received dto: %r', dto)
+    #     logger.debug('received dto: %r', dto)
         
-        _agent_type = dto.get('agent_type', 'powershell')
-        agent_types = await current_c2.get_agent_types()
-        logger.debug('available agent_types in c2 handler: ', agent_types)
-        agent_handler = agent_types[_agent_type]
+    #     _agent_type = dto.get('agent_type', 'powershell')
+    #     agent_types = await current_c2.get_agent_types()
+    #     logger.debug('available agent_types in c2 handler: ', agent_types)
+    #     agent_handler = agent_types[_agent_type]
 
-        try:
-            result_dto=  await asyncio.wait_for(agent_handler.get_available_post_exploitation_modules(), timeout=5.0)
-            response_dto = {}
-            response_dto.update(result_dto)
-            return response_dto
-        except asyncio.TimeoutError:
-            raise ConnectionError
-        except KeyError as err:
-            raise ValueError('invalid_dto %r',err)
-        except KeyError as err:
-            raise ValueError('Handler not found: {!r}'.format(err))
+    #     try:
+    #         result_dto=  await asyncio.wait_for(agent_handler.get_available_post_exploitation_modules(), timeout=5.0)
+    #         response_dto = {}
+    #         response_dto.update(result_dto)
+    #         return response_dto
+    #     except asyncio.TimeoutError:
+    #         raise ConnectionError
+    #     except KeyError as err:
+    #         raise ValueError('invalid_dto %r',err)
+    #     except KeyError as err:
+    #         raise ValueError('Handler not found: {!r}'.format(err))

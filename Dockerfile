@@ -4,7 +4,6 @@ ENV PYTHONUNBUFFERED 1
 
 WORKDIR /Zuthaka
 COPY ./src .
-COPY ./ClassHandlers /Zuthaka/zuthaka/backendapi/services/ClassHandlers/
 
 ARG DJANGO_ALLOWED_HOSTS
 ARG DJANGO_SECRET_KEY

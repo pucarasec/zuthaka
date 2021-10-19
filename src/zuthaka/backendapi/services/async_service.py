@@ -43,8 +43,8 @@ class Service():
     def get_service(cls):
         if cls._instance is None:
             from importlib.machinery import SourceFileLoader 
-            from ..models import C2Type
 
+            from ..models import C2Type
             available_c2s_modules = []
             for c2 in C2Type.objects.all():
                 available_c2s_modules.append(SourceFileLoader(c2.module_name, c2.module_path).load_module())
@@ -79,9 +79,9 @@ class Service():
 
         """
         try:
-            if not dto.c2_type:
+            if not dto.c2.c2_type:
                 raise ValueError('invalid dto missing c2_type')
-            current_c2_handler = self._c2types[dto.c2_type]
+            current_c2_handler = self._c2types[dto.c2.c2_type]
             current_c2 = current_c2_handler(dto.options)
             start_time = time()
             try:
@@ -158,7 +158,7 @@ class Service():
             "url": "https://127.0.0.1:7443" ,
             "username": "cobbr",
             "password": "NewPassword!"
-                }
+            }
           'listener_internal_id' :'123456',
         }
         """
@@ -192,11 +192,9 @@ class Service():
            raises ConectionError in case of not be able to connect to c2 instance
            raises ResourceExistsError in case of not be able to create the objectdue it already exists
 
-
            c2_id too much responsability for class implementation
             'last_connection' : '', ?UTF? valor por defecto?
             'last_connection' : '', ?UTF? valor por defecto?
-
 
         example dto:
 
@@ -238,12 +236,11 @@ class Service():
                 current_agents = []
                 for agent in obtained_agents['agents']:
                     if str(agent['listener_internal_id']) in  listener_ids:
-                        new_agent= {}
+                        new_agent = {}
                         new_agent.update(agent)
                         new_agent.update({'c2_id' :c2['c2_id']})
                         new_agent.update({'listener_id' :listener_ids[str(agent['listener_internal_id'])]})
                         current_agents.append(new_agent)
-
                 logger.debug('current_agents: %r',current_agents)
                 response_dto['agents'] += current_agents
                 logger.debug('response_dto: %r',response_dto)
@@ -284,9 +281,8 @@ class Service():
                 "default_delay": "10"
             }
         }
-
-
         """
+        
         try:
             _c2_type = dto.get('c2_type')
             current_c2_handler = self._c2types[_c2_type]
@@ -413,7 +409,7 @@ class Service():
 
             logger.debug('received dto: %r', dto)
 
-            _agent_type = dto.get('agent_type', 'powershell')
+            _agent_type = dto.get('agent_shell_type', 'powershell')
             # _agent_type = 'powershell'
             agent_types = await current_c2.get_agent_types()
             logger.debug('available agent_types in c2 handler: ', agent_types)
@@ -458,6 +454,7 @@ class Service():
                     }
                 ],
                 'agent_internal_id': '123',
+                'agent_internal_id': '123',
                 'target_directory': 'C://Users/'
                 'file_name': 'somefile.txt'
                 'file_content': '<base64 file>'
@@ -473,7 +470,7 @@ class Service():
             # logger.debug('launcher_types: ', launcher_types)
             # _launcher_options = dto.get('listener_options')
 
-            _agent_type = dto.get('agent_type', 'powershell')
+            _agent_type = dto.get('agent_shell_type', 'powershell')
             # _agent_type = 'powershell'
             agent_types = await current_c2.get_agent_types()
             logger.debug('available agent_types in c2 handler: ', agent_types)

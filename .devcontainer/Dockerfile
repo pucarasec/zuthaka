@@ -25,6 +25,8 @@ RUN chown -R pucara /Zuthaka
 USER pucara
 ENV PATH="${PATH}:/home/pucara/.local/bin"
 
+COPY .devcontainer/rc_files/.bashrc /home/pucara/
+
 WORKDIR /Zuthaka/src
 RUN pip3 install --no-cache-dir  -r requirements.txt 
 

@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install gcc vim apt-utils -y  && apt-get clean && 
 RUN python3 -m pip install --upgrade pip
 
 # Added sudo 
-RUN apt-get install sudo
+RUN apt-get update && apt-get install sudo
 RUN useradd -rm -d /home/pucara -s /bin/bash -g root -G sudo pucara
 RUN passwd -d pucara
 

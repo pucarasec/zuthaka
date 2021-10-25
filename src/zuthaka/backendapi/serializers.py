@@ -17,7 +17,7 @@ from .models import AgentTask
 from .models import AgentTaskEvent
 from django.contrib.auth.models import User
 
-from .dto import C2Dto, ListenerDto, LauncherDto, RequestDto, C2InstanceDto
+from .dtos import C2Dto, ListenerDto, LauncherDto, RequestDto, C2InstanceDto
 
 
 # C2

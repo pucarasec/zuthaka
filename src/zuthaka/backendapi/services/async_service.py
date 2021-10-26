@@ -92,7 +92,7 @@ class Service():
         except KeyError as e:
             raise ValueError('Handler not found: {!r}'.format(e))
 
-    async def create_listener(self, c2_dto: C2Dto) -> Dict[str, str]:
+    async def create_listener(self, dto: RequestDto) -> Dict[str, str]:
         """
         creates an listener on the corresponding C2 and return an listener_internal_id for the corresponding API
 
@@ -120,11 +120,17 @@ class Service():
         response_dto = {'listener_internal_id' :'123456'}} 
         """
         try:
+            c2_dto = dto.c2
+            if not c2_dto:
+                raise ValueError('invalid dto missing c2_dto')
             if not c2_dto.c2_type:
                 raise ValueError('invalid dto missing c2_type')
             current_c2_handler = self._c2types[c2_dto.c2_type]
             current_c2 = current_c2_handler(c2_dto.options)
 
+            listener_dto = dto.listener
+            if not listener_dto:
+                raise ValueError('invalid dto missing c2_dto')
             if not listener_dto.c2_type:
                 raise ValueError('invalid dto missing listener_type')
             listener_types = await current_c2.get_listener_types()

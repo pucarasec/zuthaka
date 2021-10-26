@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod, abstractproperty
 from typing import Dict, List, Iterable, Any, NamedTuple
 
-from ..dtos import RequestDto
+from ..dtos import RequestDto, ShellExecuteDto
 from asgiref.sync import sync_to_async
 import logging
 logger = logging.getLogger(__name__)
@@ -22,6 +22,7 @@ class OptionDesc(NamedTuple):
     # def __repr__(self):
     #     return f'name: {self.name}, example: {self.example}, description: {self.description}, field_type: {self.field_type}, required: {self.required}'
 
+
 class C2(ABC):
     name: str
     description: str
@@ -35,7 +36,7 @@ class C2(ABC):
         self.options = options
 
     @abstractmethod
-    async def is_alive(self, request_dto: RequestDto = None) -> bool:
+    async def is_alive(self, request_dto: RequestDto) -> bool:
         """
             tries to connect to the corresponding c2 and returns bool
             raises ConectionError in case of not be able to connect to c2 instance
@@ -58,7 +59,7 @@ class C2(ABC):
         pass
 
     @abstractmethod
-    async def retrieve_agents(self, dto: Dict[str, Any]) -> bytes:
+    async def retrieve_agents(self, dto: RequestDto) -> bytes:
         """
             retrives all available Agents on the  given C2
                raises ValueError in case of invalid dto
@@ -102,7 +103,7 @@ class ListenerType(ABC):
     """ Listener Factory """
 
     @abstractmethod
-    async def create_listener(self, options: Options) -> 'Listener':
+    async def create_listener(self, options: Options, dto: RequestDto) -> 'Listener':
         """
         creates an listener on the corresponding C2 and return a Listener with listener_internal_id for the corresponding API
 
@@ -130,7 +131,12 @@ class ListenerType(ABC):
         pass
 
     @abstractmethod
-    async def delete_listener(self, internal_id:str, options: Options) -> None:
+    async def delete_listener(
+        self,
+        internal_id: str,
+        options: Options,
+        dto: RequestDto
+    ) -> None:
 
         """
         removes a listener from a corresponding c2 instance
@@ -142,38 +148,11 @@ class ListenerType(ABC):
         """
         pass
 
-    # @abstractmethod
-    # async def get_options(self) -> Iterable[OptionDesc]:
-    #     pass
-
-    # @property
-    # @abstractmethod
-    # def name(self) -> str:
-    #     pass
-
-# class Listener(ABC):
-#     @property
-#     # @abstractmethod
-#     def internal_id(self) -> str:
-#         pass
-
-#     @property
-#     # @abstractmethod
-#     def options(self) -> str:
-#         pass
-
-#     def to_dto(self):
-#         dto = {
-#                 'listener_id': self.internal_id,
-#                 'listener_options': self.options
-#             }
-#         return dto
-
 class LauncherType(ABC):
     """ Launcher Factory """
 
     @abstractmethod
-    async def create_launcher(self, dto: Dict[str, Any]) -> str:
+    async def create_launcher(self, options: Options, dto: RequestDto) -> str:
         """
         creates a laucnher on the corresponding C2 and return an launcher_internal_id raises ValueError in case of invalid dto
            raises ConectionError in case of not be able to connect to c2 instance
@@ -183,7 +162,11 @@ class LauncherType(ABC):
         raise NotImplementedError
         
     @abstractmethod
-    async def download_launcher(self, dto: Dict[str, Any]) -> bytes:
+    async def download_launcher(
+        self,
+        options: Options,
+        dto: RequestDto
+    ) -> bytes:
         """
         retrives a created launcher using an launcher_internal_id
            raises ValueError in case of invalid dto
@@ -203,31 +186,32 @@ class Launcher(ABC):
     async def get_options(self) -> Options:
         pass
 
+
 class AgentType(ABC):
 
-    async def retreive_agents(self, dto: Dict[str, Any]) -> bytes:
-        """
-        retrives all available Agents on the  given C2
-           raises ValueError in case of invalid dto
-           raises ConectionError in case of not be able to connect to c2 instance
-           raises ResourceNotFoundError 
+    # async def retreive_agents(self, dto: Dict[str, Any]) -> bytes:
+    #     """
+    #     retrives all available Agents on the  given C2
+    #        raises ValueError in case of invalid dto
+    #        raises ConectionError in case of not be able to connect to c2 instance
+    #        raises ResourceNotFoundError 
 
-        [*] EXAMPLES 
+    #     [*] EXAMPLES 
 
-        dto = {
-            'c2_type' :'EmpireC2Type',
-            'c2_options': {
-                    "url": "https://127.0.0.1:7443",
-                    "username": "cobbr",
-                    "password": "NewPassword!"
-                },
-              'listeners_internal_ids' : ['1','2','3'] 
-              }
-        """
+    #     dto = {
+    #         'c2_type' :'EmpireC2Type',
+    #         'c2_options': {
+    #                 "url": "https://127.0.0.1:7443",
+    #                 "username": "cobbr",
+    #                 "password": "NewPassword!"
+    #             },
+    #           'listeners_internal_ids' : ['1','2','3'] 
+    #           }
+    #     """
 
-        pass
+    #     pass
 
-    async def shell_execute(self, dto: Dict[str, Any]) -> bytes:
+    async def shell_execute(self, shell_dto: ShellExecuteDto, dto: RequestDto) -> bytes:
         """
         executes a command string on the 
            raises ValueError in case of invalid dto
@@ -237,33 +221,37 @@ class AgentType(ABC):
         """
         pass
 
-class PostExploitationType(ABC):
-    async def post_exploitation_execute(self, dto: Dict[str, Any]) -> bytes:
-        pass
+# class PostExploitationType(ABC):
+#     async def post_exploitation_execute(self, dto: Dict[str, Any]) -> bytes:
+#         pass
     
-    @classmethod
-    async def to_dto(self):
-        options = getattr(self, 'registered_options', [])
-        dto_options = []
-        for opt in options:
-            dto_options.append({
-                'name' : getattr(self, 'name', ''),
-                'type' : getattr(self, 'type', 'string'),
-                'default_value' : getattr(self, 'default_value', ''),
-                'description' : getattr(self, 'description', ''),
-                'example' : getattr(self, 'example', ''),
-                'required' : getattr(self, 'required', False),
-            })
-        response_dto = {   
-            'name' : getattr(self, 'name', ''),
-            'description' : getattr(self, 'description', ''),
-            'options_description': dto_options,
-            'id_module' : 1
-        }
+#     @classmethod
+#     async def to_dto(self):
+#         options = getattr(self, 'registered_options', [])
+#         dto_options = []
+#         for opt in options:
+#             dto_options.append({
+#                 'name' : getattr(self, 'name', ''),
+#                 'type' : getattr(self, 'type', 'string'),
+#                 'default_value' : getattr(self, 'default_value', ''),
+#                 'description' : getattr(self, 'description', ''),
+#                 'example' : getattr(self, 'example', ''),
+#                 'required' : getattr(self, 'required', False),
+#             })
+#         response_dto = {   
+#             'name' : getattr(self, 'name', ''),
+#             'description' : getattr(self, 'description', ''),
+#             'options_description': dto_options,
+#             'id_module' : 1
+#         }
+
+# utils
+
 
 def sync_save_payload(name, payload):
-    with open(name,'wb') as f:
+    with open(name, 'wb') as f:
             f.wirte(payload)
 
+
 def async_save_payload(name, payload):
-    sync_to_async(sync_save_payload)(name,payload)
+    sync_to_async(sync_save_payload)(name, payload)

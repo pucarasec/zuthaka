@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod, abstractproperty
 from typing import Dict, List, Iterable, Any, NamedTuple
 
+from ..dtos import RequestDto
 from asgiref.sync import sync_to_async
 import logging
 logger = logging.getLogger(__name__)
@@ -34,7 +35,7 @@ class C2(ABC):
         self.options = options
 
     @abstractmethod
-    async def is_alive(self, name: str) -> bool:
+    async def is_alive(self, request_dto: RequestDto = None) -> bool:
         """
             tries to connect to the corresponding c2 and returns bool
             raises ConectionError in case of not be able to connect to c2 instance

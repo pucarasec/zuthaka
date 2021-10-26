@@ -10,11 +10,9 @@ Naming convention? for Types(listenerTypes, C2Types, LauncherTypes)
 """
 from typing import Dict, Any
 import asyncio
-from collections.abc import Iterable
 from time import time
 from io import FileIO
 import logging
-import inspect
 from ..utils import collect_classes
 logger = logging.getLogger(__name__) 
 #from .Empire import EmpireC2
@@ -29,6 +27,7 @@ def filter_dict(original_dict, set_of_keys):
         if key in set(set_of_keys):
             new_dict[key] = original_dict[key]
     return new_dict
+
 
 class Service():
     """
@@ -59,7 +58,7 @@ class Service():
             cls._instance._c2types = available_c2s_types
         return cls._instance
 
-    async def isalive_c2(self, dto: C2Dto) -> float:
+    async def isalive_c2(self, dto: RequestDto) -> float:
         """
         tries to connect to the corresponding c2 and returns latency in seconds
 
@@ -82,15 +81,14 @@ class Service():
             if not dto.c2.c2_type:
                 raise ValueError('invalid dto missing c2_type')
             current_c2_handler = self._c2types[dto.c2.c2_type]
-            current_c2 = current_c2_handler(dto.options)
-            start_time = time()
+            current_c2 = current_c2_handler(dto.c2.options)
             try:
-                is_alive =  await asyncio.wait_for(current_c2.is_alive(), timeout=5.0)
+                is_alive = await asyncio.wait_for(
+                    current_c2.is_alive(request_dto=dto), timeout=5.0
+                    )
             except asyncio.TimeoutError:
                 raise ConnectionError
-            end_time = time()
-            latency = end_time - start_time
-            return  latency
+            return is_alive
         except KeyError as e:
             raise ValueError('Handler not found: {!r}'.format(e))
 

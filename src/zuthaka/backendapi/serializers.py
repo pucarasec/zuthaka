@@ -257,15 +257,21 @@ class ListenerSerializer(serializers.ModelSerializer):
             
             _c2 = C2.objects.get(pk=instance.c2_id)
             _c2_type = _c2.c2_type.name
-            options = {option.name:option.value for option in _c2.options.all()}
+            options = {option.name: option.value
+                       for option in _c2.options.all()}
             c2_dto = C2Dto(c2_type= _c2_type, options=options)
             
             listener_type = instance.listener_type.name
-            listener_options = {elem['name']:elem['value'] for elem in data['options']}
+            listener_options = {option.name: option.value
+                                for option in instance.options.all()}
             listener_internal_id = instance.listener_internal_id
-            listener_dto = ListenerDto(listener_type= listener_type, options = listener_options, listener_internal_id=listener_internal_id)
+            listener_dto = ListenerDto(
+                listener_type=listener_type,
+                options=listener_options,
+                listener_internal_id=listener_internal_id
+            )
 
-            dto = RequestDto(c2= c2_dto, listener= listener)
+            dto = RequestDto(c2= c2_dto, listener=listener_dto)
             # _c2 = C2.objects.get(pk=instance.c2_id)
             # dto['c2_type'] = _c2.c2_type.name
             # dto['c2_options'] = {option.name:option.value for option in _c2.options.all()}

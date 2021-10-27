@@ -177,14 +177,24 @@ class Service():
             current_c2_handler = self._c2types[c2_dto.c2_type]
             current_c2 = current_c2_handler(c2_dto.options)
 
+            listener_dto = dto.listener
+            if not listener_dto:
+                raise ValueError('invalid dto missing c2_dto')
+            if not listener_dto.listener_type:
+                raise ValueError('invalid dto missing listener_type')
             listener_types = await current_c2.get_listener_types()
-            listener_handler = listener_types['listener_type']
+            listener_handler = listener_types[listener_dto.listener_type]
 
-            _listener_options = dto.get('listener_options')
-            internal_id = dto.get('listener_internal_id')
+            _listener_options = listener_dto.options
+            internal_id = listener_dto.listener_internal_id
 
             try:
-                result =  await asyncio.wait_for(listener_handler.delete(internal_id, _listener_options), timeout=5.0)
+                result = await asyncio.wait_for(
+                    listener_handler.delete_listener(internal_id,
+                                                     _listener_options,
+                                                     dto),
+                    timeout=5.0
+                )
                 return result
             except asyncio.TimeoutError:
                 raise ConnectionError

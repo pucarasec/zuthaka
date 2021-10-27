@@ -210,12 +210,18 @@ class CovenantHTTPListenerType(ListenerType):
         except aiohttp.client_exceptions.ClientConnectorError as err:
             raise ConnectionError(err)
 
-    async def delete_listener(self, internal_id: str, options: Options) -> None:
-        headers = {'Authorization': 'Bearer {}'.format(await self._c2._get_token())}
+    async def delete_listener(
+        self,
+        internal_id: str,
+        options: Options,
+        dto: RequestDto
+    ) -> None:
+        headers = {'Authorization': 'Bearer {}'
+                   .format(await self._c2._get_token())}
         target = '{}/api/listeners/{}'.format(self._url, internal_id)
-        async with self.get_session() as session:
+        async with self._c2.get_session() as session:
             async with session.delete(target, headers=headers) as response:
-                result = await response.text
+                result = await response.text()
                 logger.error('[*] result: %r ', result)
                 if response.ok:
                     return

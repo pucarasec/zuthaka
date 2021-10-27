@@ -135,7 +135,6 @@ class ListenersViewSet(ModelViewSet):
         service = Service.get_service()
         dto = self.serializer_class.to_dto_from_instance(instance)
         try:
-            import ipdb; ipdb.set_trace()
             listener_internal_id = async_to_sync(service.delete_listener)(dto)
             instance.delete()
         except ValueError as err:

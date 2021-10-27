@@ -83,7 +83,7 @@ class Service():
                 is_alive = await asyncio.wait_for(
                     current_c2.is_alive(dto), timeout=5.0
                     )
-                logger.debug('is_alive: %r', is_alive)
+                # logger.debug('is_alive: %r', is_alive)
                     
             except asyncio.TimeoutError:
                 raise ConnectionError
@@ -123,7 +123,7 @@ class Service():
             if not c2_dto:
                 raise ValueError('invalid dto missing c2_dto')
             if not c2_dto.c2_type:
-                raise ValueError('invalid dto missing c2_type')
+                raise ValueError('invalid dto missing c2_type, test')
             current_c2_handler = self._c2types[c2_dto.c2_type]
             current_c2 = current_c2_handler(c2_dto.options)
 
@@ -135,9 +135,12 @@ class Service():
             listener_types = await current_c2.get_listener_types()
             listener_handler = listener_types[listener_dto.listener_type]
 
-            _listener_options = dto.get('listener_options')
+            _listener_options = listener_dto.options
             try:
-                created_listener = await asyncio.wait_for(listener_handler.create_listener(_listener_options), timeout=5.0)
+                created_listener = await asyncio.wait_for(
+                    listener_handler.create_listener(_listener_options, dto),
+                    timeout=5.0
+                )
                 # add check demo
                 return created_listener
             except asyncio.TimeoutError:
@@ -250,9 +253,6 @@ class Service():
                 logger.debug('response_dto: %r',response_dto)
             except asyncio.TimeoutError:
                 raise ConnectionError
-            # except KeyError as e:
-            #     logger.debug(e)
-            #     raise ValueError(repr(e))
         logger.debug('response_dto: ',response_dto)
         return response_dto
 

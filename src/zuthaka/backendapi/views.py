@@ -121,6 +121,7 @@ class ListenersViewSet(ModelViewSet):
         service = Service.get_service()
         dto = serializer.to_dto()
         try:
+            logger.debug('dto: %r', dto)
             _listener_created = async_to_sync(service.create_listener)(dto)
             serializer.save(listener_internal_id = _listener_created['listener_internal_id'])
         except ResourceExistsError:

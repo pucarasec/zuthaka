@@ -2,6 +2,7 @@ from .. import ResourceExistsError, ResourceNotFoundError
 # from . import InconsistencyError
 # from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc, PostExploitationType
 from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc
+from ....dtos import RequestDto
 
 import asyncio
 import random
@@ -72,7 +73,7 @@ class CovenantC2(C2):
         target = self.options['url'] + '/api/users/login'
         async with self.get_session() as session:
             async with session.post(target, json=data) as response:
-                logger.debug('response: %s', response)
+                # logger.debug('response: %s', response)
                 result = await response.json()
                 if result['success']:
                     self._token = result['covenantToken']
@@ -81,9 +82,9 @@ class CovenantC2(C2):
                         'Error Authenticating: {}'.format(result))
         return self._token
 
-    async def is_alive(self, requestDto) -> bool:
+    async def is_alive(self, requestDto: RequestDto) -> bool:
         try:
-            logger.debug('requestDto: %s', requestDto)
+            # logger.debug('requestDto: %s', requestDto)
             token = await self._get_token()
             return bool(token)
         except aiohttp.InvalidURL as er:
@@ -159,8 +160,9 @@ class CovenantHTTPListenerType(ListenerType):
         self._url = url
         self._c2 = _c2
 
-    async def create_listener(self, options: Options) -> Dict:
-        logger.debug('[*] options:', options)
+    async def create_listener(self, options: Options, dto: RequestDto) -> Dict:
+        # logger.debug('[*] options:', options)
+        # logger.debug('[*] dto:', dto)
         connect_address = options.get('connectAddresses', '')
         connect_port = options.get('connectPort', '')
         if not connect_address or not connect_port:
@@ -184,11 +186,17 @@ class CovenantHTTPListenerType(ListenerType):
             "status": "Active",
         }
         try:
-            headers = {'Authorization': 'Bearer {}'.format(await self._c2._get_token())}
+            headers = {'Authorization': 'Bearer {}'.format(
+                await self._c2._get_token()
+            )}
             target = '{}/api/listeners/http'.format(self._url)
 
             async with self._c2.get_session() as session:
-                async with session.post(target, headers=headers, json=covenant_dict) as response:
+                async with session.post(
+                    target,
+                    headers=headers,
+                    json=covenant_dict
+                ) as response:
                     text = await response.text()
                     if response.ok:
                         options = await response.json()

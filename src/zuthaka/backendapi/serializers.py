@@ -117,6 +117,7 @@ class C2Serializer(serializers.ModelSerializer):
         }
         '''
         data = self.validated_data 
+        logger.debug('data: %r', data)
         # dto = {}
         # if 'c2_type' in data:
         #     dto['c2_type'] = data['c2_type'].name
@@ -213,15 +214,16 @@ class ListenerSerializer(serializers.ModelSerializer):
         data = self.validated_data 
         dto = {}
         try:
-            _c2_type = data['c2_type'].name
-            options =  {option.name:option.value for option in data['c2'].options.all()}
+            # _c2_type = data['c2_type'].name
+            _c2_type = data['c2'].c2_type.name
+            options = {option.name: option.value for option in data['c2'].options.all()}
             c2_dto = C2Dto(c2_type= _c2_type, options=options)
             
             listener_type = data['listener_type'].name
-            listener_options = {elem['name']:elem['value'] for elem in data['options']}
-            listener_dto = ListenerDto(listener_type= listener_type, options = listener_options)
+            listener_options = {elem['name']: elem['value'] for elem in data['options']}
+            listener_dto = ListenerDto(listener_type=listener_type, options=listener_options)
             
-            dto = RequestDto(c2= c2_dto, listener= listener)
+            dto = RequestDto(c2=c2_dto, listener=listener_dto)
             # dto['c2_type'] = data['c2'].c2_type.name
             # dto['c2_options'] = {option.name:option.value for option in data['c2'].options.all()}
             # dto['listener_type'] = data['listener_type'].name

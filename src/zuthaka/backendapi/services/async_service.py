@@ -10,14 +10,11 @@ Naming convention? for Types(listenerTypes, C2Types, LauncherTypes)
 """
 from typing import Dict, Any
 import asyncio
-from time import time
 from io import FileIO
 import logging
 from ..utils import collect_classes
 logger = logging.getLogger(__name__) 
-#from .Empire import EmpireC2
 from .exceptions import ResourceNotFoundError, ResourceExistsError, InconsistencyError
-
 from ..dtos import C2Dto, ListenerDto, LauncherDto, RequestDto
 
 
@@ -84,8 +81,10 @@ class Service():
             current_c2 = current_c2_handler(dto.c2.options)
             try:
                 is_alive = await asyncio.wait_for(
-                    current_c2.is_alive(request_dto=dto), timeout=5.0
+                    current_c2.is_alive(dto), timeout=5.0
                     )
+                logger.debug('is_alive: %r', is_alive)
+                    
             except asyncio.TimeoutError:
                 raise ConnectionError
             return is_alive
@@ -180,7 +179,6 @@ class Service():
 
             _listener_options = dto.get('listener_options')
             internal_id = dto.get('listener_internal_id')
-            # _listener = listener_handler._wrap_listener(internal_id, _listener_options)
 
             try:
                 result =  await asyncio.wait_for(listener_handler.delete(internal_id, _listener_options), timeout=5.0)

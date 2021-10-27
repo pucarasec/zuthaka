@@ -1,18 +1,16 @@
 from .. import ResourceExistsError, ResourceNotFoundError
 # from . import InconsistencyError
-from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc, PostExploitationType
+# from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc, PostExploitationType
+from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc
 
 import asyncio
 import random
 import string
-from typing import Iterable, Optional, Type, Dict, Any, IO
-import json
+from typing import Iterable, Optional, Dict, Any, IO
+import aiohttp
 import logging
 logger = logging.getLogger(__name__)
 
-import aiohttp
-import requests
-import io
 
 class CovenantC2(C2):
     name = 'covenant_integration'
@@ -74,6 +72,7 @@ class CovenantC2(C2):
         target = self.options['url'] + '/api/users/login'
         async with self.get_session() as session:
             async with session.post(target, json=data) as response:
+                logger.debug('response: %s', response)
                 result = await response.json()
                 if result['success']:
                     self._token = result['covenantToken']
@@ -82,11 +81,12 @@ class CovenantC2(C2):
                         'Error Authenticating: {}'.format(result))
         return self._token
 
-    async def is_alive(self) -> bool:
+    async def is_alive(self, requestDto) -> bool:
         try:
-            await self._get_token()
+            logger.debug('requestDto: %s', requestDto)
+            token = await self._get_token()
+            return bool(token)
         except aiohttp.InvalidURL as er:
-
             raise ValueError(repr(er))
         except aiohttp.ClientError as er:
             if hasattr(er, 'code') and er.code == 400:
@@ -126,6 +126,7 @@ class CovenantC2(C2):
                     return response_dto
         except aiohttp.client_exceptions.ClientConnectorError as err:
             raise ConnectionError(err)
+
 
 class CovenantHTTPListenerType(ListenerType):
     name = 'default-http-profile'
@@ -214,6 +215,7 @@ class CovenantHTTPListenerType(ListenerType):
                     raise ResourceNotFoundError(
                         'Error fetching listeners: {}'.format(result))
 
+
 class CovenantPowershellLauncherType(LauncherType):
     name = 'Powershell Launcher'
     description = 'Uses powershell.exe to launch Agent using [systemm.reflection.assemly::load()'
@@ -268,6 +270,7 @@ class CovenantPowershellLauncherType(LauncherType):
                     return response_dto
         except aiohttp.client_exceptions.ClientConnectorError as err:
             raise ConnectionError(err)
+
 
 class PowershellAgentType(AgentType):
     shell_type = 'powershell'

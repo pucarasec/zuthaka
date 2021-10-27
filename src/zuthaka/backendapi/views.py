@@ -47,7 +47,8 @@ from .services.async_service import Service
 
 class C2sViewSet(ModelViewSet):
     '''
-        Real Business Logic '''
+        Real Business Logic 
+    '''
     queryset = C2.objects.all()
     serializer_class = C2Serializer
     filter_backends = (filters.DjangoFilterBackend,)
@@ -57,7 +58,7 @@ class C2sViewSet(ModelViewSet):
         service = Service.get_service()
         dto = serializer.to_dto()
         try:
-            is_alive  = async_to_sync(service.isalive_c2)(dto)
+            is_alive = async_to_sync(service.isalive_c2)(dto)
             if is_alive:
                 # result = self.persist_db(dto)
                 serializer.save()

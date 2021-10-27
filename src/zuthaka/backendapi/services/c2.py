@@ -8,12 +8,23 @@ logger = logging.getLogger(__name__)
 
 Options = Dict[str, str]
 
+
+# utils
+def sync_save_payload(name, payload):
+    with open(name, 'wb') as f:
+        f.wirte(payload)
+
+
+def async_save_payload(name, payload):
+    sync_to_async(sync_save_payload)(name, payload)
+
+
 # pylint: disable=inherit-non-class
 class OptionDesc(NamedTuple):
-    name: str= ''
-    example: str= ''
-    description: str= ''
-    field_type: str= ''
+    name: str = ''
+    example: str = ''
+    description: str = ''
+    field_type: str = ''
     required: bool = True
 
     # def __str__(self):
@@ -31,7 +42,7 @@ class C2(ABC):
 
     def __init__(self, options: Options) -> None:
         _is_valid = self.__class__.validate_options(options)
-        if not _is_valid :
+        if not _is_valid:
             raise ValueError('Invalid options')
         self.options = options
 
@@ -93,19 +104,25 @@ class C2(ABC):
     
     @classmethod
     def validate_options(cls, options: Options) -> bool:
-        logger.debug('options: %s', options)
-        for  option in cls.registered_options:
+        # logger.debug('options: %s', options)
+        for option in cls.registered_options:
             if option.name not in options:
                 logger.debug('option missing: %r', option)
         return all(option.name in options for option in cls.registered_options)
+
 
 class ListenerType(ABC):
     """ Listener Factory """
 
     @abstractmethod
-    async def create_listener(self, options: Options, dto: RequestDto) -> 'Listener':
+    async def create_listener(
+        self,
+        options: Options,
+        dto: RequestDto
+    ) -> 'Listener':
         """
-        creates an listener on the corresponding C2 and return a Listener with listener_internal_id for the corresponding API
+        creates an listener on the corresponding C2 and return a Listener with
+        listener_internal_id for the corresponding API
 
            raises ValueError in case of invalid dto
            raises ConectionError in case of not be able to connect to c2 instance
@@ -174,42 +191,9 @@ class LauncherType(ABC):
            raises ResourceNotFoundError 
         """
         raise NotImplementedError
-        
-
-class Launcher(ABC):
-    @property
-    @abstractmethod
-    async def output(self) -> str:
-        pass
-
-    @abstractmethod
-    async def get_options(self) -> Options:
-        pass
 
 
 class AgentType(ABC):
-
-    # async def retreive_agents(self, dto: Dict[str, Any]) -> bytes:
-    #     """
-    #     retrives all available Agents on the  given C2
-    #        raises ValueError in case of invalid dto
-    #        raises ConectionError in case of not be able to connect to c2 instance
-    #        raises ResourceNotFoundError 
-
-    #     [*] EXAMPLES 
-
-    #     dto = {
-    #         'c2_type' :'EmpireC2Type',
-    #         'c2_options': {
-    #                 "url": "https://127.0.0.1:7443",
-    #                 "username": "cobbr",
-    #                 "password": "NewPassword!"
-    #             },
-    #           'listeners_internal_ids' : ['1','2','3'] 
-    #           }
-    #     """
-
-    #     pass
 
     async def shell_execute(self, shell_dto: ShellExecuteDto, dto: RequestDto) -> bytes:
         """
@@ -220,6 +204,17 @@ class AgentType(ABC):
 
         """
         pass
+
+# class Launcher(ABC):
+#     @property
+#     @abstractmethod
+#     async def output(self) -> str:
+#         pass
+
+#     @abstractmethod
+#     async def get_options(self) -> Options:
+#         pass
+
 
 # class PostExploitationType(ABC):
 #     async def post_exploitation_execute(self, dto: Dict[str, Any]) -> bytes:
@@ -245,13 +240,3 @@ class AgentType(ABC):
 #             'id_module' : 1
 #         }
 
-# utils
-
-
-def sync_save_payload(name, payload):
-    with open(name, 'wb') as f:
-            f.wirte(payload)
-
-
-def async_save_payload(name, payload):
-    sync_to_async(sync_save_payload)(name, payload)

@@ -289,20 +289,29 @@ class LauncherTypeOptionSerializer(serializers.ModelSerializer):
         model = LauncherTypeOption
         fields = ('name', 'example', 'description', 'type', 'required')
 
-class ListenersAvaialbleField(serializers.RelatedField):
+
+class ListenersAvailableField(serializers.RelatedField):
     def to_representation(self, value):
-        listeners_available = Listener.objects.all().filter(id=value.id)
-        return [{'listener_id': listener.id} for listener in listeners_available]
+        c2s = C2.objects.all().filter(c2_type=value)
+        listeners_available = []
+        for c2 in c2s:
+            listeners_available.extend(Listener.objects.all().filter(c2=c2))
+        response = [{'listener_id': listener.id,
+                    'listener_type': listener.listener_type.name} for
+                    listener in listeners_available]
+        return response
+
 
 class LauncherTypeSerializer(serializers.ModelSerializer):
     options = LauncherTypeOptionSerializer(many=True)
-    available_listeners = ListenersAvaialbleField(
+    available_listeners = ListenersAvailableField(
         source='c2_type', read_only=True)
 
     class Meta:
         model = ListenerType
         fields = ('id', 'name', 'available_listeners',
                   'description',  'options')
+
 
 class LauncherOptionSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
@@ -382,17 +391,18 @@ class LauncherSerializer(serializers.ModelSerializer):
             # dto['launcher_options'] = {elem['name']:elem['value'] for elem in data['options']}
 
             _c2_type = data['listener'].c2.c2_type.name
-            options =  {option.name:option.value for option in data['listener'].c2.options.all()}
-            c2_dto = C2Dto(c2_type= _c2_type, options=options)
+            options =  {option.name: option.value for option in data['listener'].c2.options.all()}
+            c2_dto = C2Dto(c2_type=_c2_type, options=options)
             
-            listener_type = data['listener_type'].name
-            listener_options = {elem['name']:elem['value'] for elem in data['options']}
-            listener_dto = ListenerDto(listener_type= listener_type, options = listener_options)
+            listener_type = data['listener'].listener_type.name
+            listener_options = {option.name: option.value for option in data['listener'].options.all()}
+            listener_dto = ListenerDto(listener_type=listener_type, options=listener_options)
             
-            dto = RequestDto(c2= c2_dto, listener= listener)
+            dto = RequestDto(c2= c2_dto, listener=listener_dto)
         except KeyError as err:
             raise serializers.ValidationError(repr(err))
         return dto
+
 
 class AgentSerializer(serializers.ModelSerializer):
     # options = ListenerOptionSerializer(many=True)

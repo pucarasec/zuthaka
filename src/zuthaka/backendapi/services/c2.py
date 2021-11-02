@@ -55,19 +55,36 @@ class C2(ABC):
         """
         pass
     
-    @abstractmethod
-    async def get_listener_types(self) -> Dict[str, 'ListenerType']:
+    async def get_listener_types(self) -> Iterable['ListenerType']:
         """
             Returns a dictionary with all the registered listener types 
         """
-        pass
+        return self._listener_types
 
-    @abstractmethod
     async def get_launcher_types(self) -> Iterable['LauncherType']:
         """
             Returns a dictionary with all the registered launcher types 
         """
-        pass
+        return self._launcher_types
+
+    async def get_agent_types(self) -> Iterable['LauncherType']:
+        """
+            Returns a dictionary with all the registered agents types 
+        """
+        return self._agent_types
+    # @abstractmethod
+    # async def get_listener_types(self) -> Dict[str, 'ListenerType']:
+    #     """
+    #         Returns a dictionary with all the registered listener types 
+    #     """
+    #     pass
+
+    # @abstractmethod
+    # async def get_launcher_types(self) -> Iterable['LauncherType']:
+    #     """
+    #         Returns a dictionary with all the registered launcher types 
+    #     """
+    #     pass
 
     @abstractmethod
     async def retrieve_agents(self, dto: RequestDto) -> bytes:
@@ -169,28 +186,37 @@ class LauncherType(ABC):
     """ Launcher Factory """
 
     @abstractmethod
-    async def create_launcher(self, options: Options, dto: RequestDto) -> str:
+    async def create_and_retrieve_launcher(self, options: Options, dto: RequestDto) -> str:
         """
-        creates a laucnher on the corresponding C2 and return an launcher_internal_id raises ValueError in case of invalid dto
-           raises ConectionError in case of not be able to connect to c2 instance
-           raises ResourceExistsError in case of not be able to create the objectdue it already exists
-
-        """
-        raise NotImplementedError
-        
-    @abstractmethod
-    async def download_launcher(
-        self,
-        options: Options,
-        dto: RequestDto
-    ) -> bytes:
-        """
-        retrives a created launcher using an launcher_internal_id
+        creates and retrieves laucnher on the corresponding C2 
            raises ValueError in case of invalid dto
            raises ConectionError in case of not be able to connect to c2 instance
-           raises ResourceNotFoundError 
         """
         raise NotImplementedError
+
+    # @abstractmethod
+    # async def create_launcher(self, options: Options, dto: RequestDto) -> str:
+    #     """
+    #     creates a laucnher on the corresponding C2 and return an launcher_internal_id raises ValueError in case of invalid dto
+    #        raises ConectionError in case of not be able to connect to c2 instance
+    #        raises ResourceExistsError in case of not be able to create the objectdue it already exists
+
+    #     """
+    #     raise NotImplementedError
+        
+    # @abstractmethod
+    # async def download_launcher(
+    #     self,
+    #     options: Options,
+    #     dto: RequestDto
+    # ) -> bytes:
+    #     """
+    #     retrives a created launcher using an launcher_internal_id
+    #        raises ValueError in case of invalid dto
+    #        raises ConectionError in case of not be able to connect to c2 instance
+    #        raises ResourceNotFoundError 
+    #     """
+    #     raise NotImplementedError
 
 
 class AgentType(ABC):

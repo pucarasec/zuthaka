@@ -178,8 +178,8 @@ class LaunchersViewSet(EnablePartialUpdateMixin, ModelViewSet):
 
 
     def perform_create(self, serializer):
-        import ipdb;ipdb.set_trace()
         service = Service.get_service()
+        import ipdb; ipdb.set_trace()
         dto = serializer.to_dto()
         try:
             launcher_created_dto = async_to_sync(service.create_launcher_and_retrieve)(dto)
@@ -188,9 +188,9 @@ class LaunchersViewSet(EnablePartialUpdateMixin, ModelViewSet):
             new_launcher = serializer.save(listener=validated_data['listener'],launcher_type=validated_data['launcher_type'],launcher_internal_id = launcher_created_dto['launcher_internal_id'])
             new_launcher.launcher_file.save(launcher_created_dto['payload_name'],ContentFile(launcher_created_dto['payload_content']), save=True)
             # data =  serializer.validated_data 
-        except ValueError:
+        except ValueError as err:
             raise serializers.ValidationError("The c2 was not reachable")
-        except ConnectionError:
+        except ConnectionError as err:
             raise serializers.ValidationError("The c2 was not reachable")
 
     @action(detail=True, methods=['get'])

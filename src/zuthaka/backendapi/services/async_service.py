@@ -127,15 +127,15 @@ class Service():
             current_c2_handler = self._c2types[c2_dto.c2_type]
             current_c2 = current_c2_handler(c2_dto.options)
 
-            listener_dto = dto.listener
-            if not listener_dto:
+            launcher_dto = dto.listener
+            if not launcher_dto:
                 raise ValueError('invalid dto missing c2_dto')
-            if not listener_dto.listener_type:
+            if not launcher_dto.listener_type:
                 raise ValueError('invalid dto missing listener_type')
-            listener_types = await current_c2.get_listener_types()
-            listener_handler = listener_types[listener_dto.listener_type]
+            launcher_types = await current_c2.get_listener_types()
+            listener_handler = launcher_types[launcher_dto.listener_type]
 
-            _listener_options = listener_dto.options
+            _listener_options = launcher_dto.options
             try:
                 created_listener = await asyncio.wait_for(
                     listener_handler.create_listener(_listener_options, dto),
@@ -177,16 +177,16 @@ class Service():
             current_c2_handler = self._c2types[c2_dto.c2_type]
             current_c2 = current_c2_handler(c2_dto.options)
 
-            listener_dto = dto.listener
-            if not listener_dto:
+            launcher_dto = dto.listener
+            if not launcher_dto:
                 raise ValueError('invalid dto missing c2_dto')
-            if not listener_dto.listener_type:
+            if not launcher_dto.listener_type:
                 raise ValueError('invalid dto missing listener_type')
-            listener_types = await current_c2.get_listener_types()
-            listener_handler = listener_types[listener_dto.listener_type]
+            launcher_types = await current_c2.get_listener_types()
+            listener_handler = launcher_types[launcher_dto.listener_type]
 
-            _listener_options = listener_dto.options
-            internal_id = listener_dto.listener_internal_id
+            _listener_options = launcher_dto.options
+            internal_id = launcher_dto.listener_internal_id
 
             try:
                 result = await asyncio.wait_for(
@@ -298,27 +298,37 @@ class Service():
         """
         
         try:
-            _c2_type = dto.get('c2_type')
-            current_c2_handler = self._c2types[_c2_type]
-            _c2_options = dto.get('c2_options')
-            current_c2 = current_c2_handler(_c2_options)
+            c2_dto = dto.c2
+            if not c2_dto:
+                raise ValueError('invalid dto missing c2_dto')
+            if not c2_dto.c2_type:
+                raise ValueError('invalid dto missing c2_type')
+            current_c2_handler = self._c2types[c2_dto.c2_type]
+            current_c2 = current_c2_handler(c2_dto.options)
 
-            _launcher_type = dto.get('launcher_type')
+            launcher_dto = dto.launcher
+            if not launcher_dto:
+                raise ValueError('invalid dto missing launcher_dto')
+            if not launcher_dto.listener_type:
+                raise ValueError('invalid dto missing launcher_type')
             launcher_types = await current_c2.get_launcher_types()
-            logger.debug('dto: ', dto)
+            launcher_handler = launcher_types[launcher_dto.launcher_type]
+
+            _listener_options = launcher_dto.options
+            internal_id = launcher_dto.listener_internal_id
+            logger.debug('request dto: ', dto)
             logger.debug('launcher_types: ', launcher_types)
             launcher_handler = launcher_types[_launcher_type]
 
-            # _launcher_options = dto.get('listener_options')
             try:
-                creation_dto = filter_dict(dto, ['listener_internal_id', 'launcher_options'])
+                # creation_dto = filter_dict(dto, ['listener_internal_id', 'launcher_options'])
                 logger.debug('creation_dto: ', creation_dto)
-                created_launcher =  await asyncio.wait_for(launcher_handler.create_launcher(creation_dto), timeout=5.0)
+                downloaded_launcher =  await asyncio.wait_for(launcher_handler.create_and_retrieve_launcher(creation_dto), timeout=5.0)
                 logger.debug(created_launcher)
 
-                retrieve_dto = filter_dict(dto, ['listener_internal_id', 'launcher_options'])
-                retrieve_dto['launcher_internal_id'] = created_launcher.get('launcher_internal_id')
-                downloaded_launcher=  await asyncio.wait_for(launcher_handler.download_launcher(retrieve_dto), timeout=5.0)
+                # retrieve_dto = filter_dict(dto, ['listener_internal_id', 'launcher_options'])
+                # retrieve_dto['launcher_internal_id'] = created_launcher.get('launcher_internal_id')
+                # downloaded_launcher=  await asyncio.wait_for(launcher_handler.download_launcher(retrieve_dto), timeout=5.0)
 
                 response_dto = {}
                 response_dto.update(created_launcher)
@@ -331,6 +341,72 @@ class Service():
 
         except KeyError as err:
             raise ValueError('Handler not found: {!r}'.format(err))
+
+    # async def create_launcher_and_retrieve(self, dto: Dict[str, Any]) -> Dict[str,Any]:
+    #     """
+    #     creates a laucnher on the corresponding C2 and return an launcher_internal_id 
+    #        raises ValueError in case of invalid dto
+    #        raises ConectionError in case of not be able to connect to c2 instance
+    #        raises ResourceNotFoundError 
+
+    #     [*] EXAMPLES 
+    #     dto = {
+    #     'c2_type' :'CovenantC2Type',
+    #     'c2_options': {
+    #             "url": "https://127.0.0.1:7443",
+    #             "username": "cobbr",
+    #             "password": "NewPassword!"
+    #         },
+    #       'listener_type' :'http',
+    #       'listener_id' :'12',
+    #       'listener_internal_id' :'123456',
+    #       'listener_options' : {
+    #             "interface": "192.168.0.1",
+    #             "port": "139",
+    #             "default_delay": "10",
+    #         }
+    #       'launcher_type' :'powershell',
+    #       'listener_type_id' :'1',
+    #       'launcher_options' : {
+    #             "default_delay": "10"
+    #         }
+    #     }
+    #     """
+        
+    #     try:
+    #         _c2_type = dto.get('c2_type')
+    #         current_c2_handler = self._c2types[_c2_type]
+    #         _c2_options = dto.get('c2_options')
+    #         current_c2 = current_c2_handler(_c2_options)
+
+    #         _launcher_type = dto.get('launcher_type')
+    #         launcher_types = await current_c2.get_launcher_types()
+    #         logger.debug('dto: ', dto)
+    #         logger.debug('launcher_types: ', launcher_types)
+    #         launcher_handler = launcher_types[_launcher_type]
+
+    #         # _launcher_options = dto.get('listener_options')
+    #         try:
+    #             creation_dto = filter_dict(dto, ['listener_internal_id', 'launcher_options'])
+    #             logger.debug('creation_dto: ', creation_dto)
+    #             created_launcher =  await asyncio.wait_for(launcher_handler.create_launcher(creation_dto), timeout=5.0)
+    #             logger.debug(created_launcher)
+
+    #             retrieve_dto = filter_dict(dto, ['listener_internal_id', 'launcher_options'])
+    #             retrieve_dto['launcher_internal_id'] = created_launcher.get('launcher_internal_id')
+    #             downloaded_launcher=  await asyncio.wait_for(launcher_handler.download_launcher(retrieve_dto), timeout=5.0)
+
+    #             response_dto = {}
+    #             response_dto.update(created_launcher)
+    #             response_dto.update(downloaded_launcher)
+    #             return response_dto
+    #         except asyncio.TimeoutError:
+    #             raise ConnectionError
+    #         except KeyError as err:
+    #             raise ValueError('invalid_dto %r',err)
+
+    #     except KeyError as err:
+    #         raise ValueError('Handler not found: {!r}'.format(err))
 
     async def shell_execute(self, dto: Dict[str, Any]) -> bytes:
         """

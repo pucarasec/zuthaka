@@ -117,7 +117,7 @@ class C2Serializer(serializers.ModelSerializer):
         }
         '''
         data = self.validated_data 
-        logger.debug('data: %r', data)
+        # logger.debug('data: %r', data)
         # dto = {}
         # if 'c2_type' in data:
         #     dto['c2_type'] = data['c2_type'].name

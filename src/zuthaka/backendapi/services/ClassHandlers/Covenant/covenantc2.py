@@ -84,7 +84,7 @@ class CovenantC2(C2):
 
     async def is_alive(self, requestDto: RequestDto) -> bool:
         try:
-            # logger.debug('requestDto: %s', requestDto)
+            logger.debug('requestDto: %s', requestDto)
             token = await self._get_token()
             return bool(token)
         except aiohttp.InvalidURL as er:
@@ -94,16 +94,8 @@ class CovenantC2(C2):
                 raise ConnectionRefusedError(repr(er))
             raise ConnectionError(repr(er))
 
-    async def get_listener_types(self) -> Iterable[ListenerType]:
-        return self._listener_types
 
-    async def get_launcher_types(self) -> Iterable[LauncherType]:
-        return self._launcher_types
-
-    async def get_agent_types(self) -> Iterable[LauncherType]:
-        return self._agent_types
-
-    async def retrieve_agents(self, dto: Dict[str, Any]) -> bytes:
+    async def retrieve_agents(self, dto: RequestDto) -> bytes:
         try:
             headers = {'Authorization': 'Bearer {}'.format(await self._get_token())}
             target = '{}/api/grunts'.format(self.options['url'])
@@ -246,6 +238,42 @@ class CovenantPowershellLauncherType(LauncherType):
     def __init__(self, url: str,  _c2: CovenantC2) -> None:
         self._url = url
         self._c2 = _c2
+    
+    async def create_and_retrieve_launcher(options: Options, dto: RequestDto):
+        # options = dto.get('launcher_options')
+        # try:
+        #     headers = {'Authorization': 'Bearer {}'.format(await self._c2._get_token())}
+        #     target = '{}/api/launchers/powershell'.format(self._url)
+        #     listener_id = dto.get('listener_internal_id')
+
+        #     creation_dict = {
+        #         "listenerId": listener_id,
+        #         "ImplantTemplateId": 1,
+        #         "delay": options.get('Delay', 1),
+        #     }  
+        #     async with self._c2.get_session() as session:
+        #         async with session.put(target, headers=headers, json=creation_dict) as response:
+        #             text = await response.text()
+        #             response_dto = {}
+        #             response_dto['launcher_internal_id'] = ''
+        #             response_dto['launcher_options'] = await response.json()
+        #             # return response_dto
+        # except aiohttp.client_exceptions.ClientConnectorError as err:
+        #     raise ConnectionError(err)
+        try:
+            headers = {'Authorization': 'Bearer {}'.format(await self._c2._get_token())}
+            target = '{}/api/launchers/powershell'.format(self._url)
+            response_dto = {}
+            async with self._c2.get_session() as session:
+                async with session.post(target, headers=headers) as response:
+                    response_dict = await response.json()
+                    # logger.debug('[*] response_dict: %r ',  response_dict.keys())
+                    response_dto['payload_content'] = response_dict["encodedLauncherString"]
+                    response_dto['payload_name'] = response_dict["name"] + '.ps1'
+                    logger.debug('[*] payload_name: %r ',  response_dict['name'])
+                    return response_dto
+        except aiohttp.client_exceptions.ClientConnectorError as err:
+            raise ConnectionError(err)
 
     async def create_launcher(self, dto: Dict[str, Any]) -> str:
         options = dto.get('launcher_options')

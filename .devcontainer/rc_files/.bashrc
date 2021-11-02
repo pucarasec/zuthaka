@@ -113,4 +113,6 @@ if ! shopt -oq posix; then
 fi
 
 alias zuthaka-reload='/Zuthaka/src/zuthaka/manage.py runscript reset_loaded_db'
+alias zuthaka-start='/Zuthaka/src/zuthaka/manage.py runserver 0.0.0.0:8080'
+alias zuthaka-log='tail -f /Zuthaka/src/zuthaka/zuthaka.log'
 # alias zuthaka-reload='/Zuthaka/src/zuthaka/manage.py runscript reset_loaded_db'

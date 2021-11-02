@@ -398,7 +398,11 @@ class LauncherSerializer(serializers.ModelSerializer):
             listener_options = {option.name: option.value for option in data['listener'].options.all()}
             listener_dto = ListenerDto(listener_type=listener_type, options=listener_options)
             
-            dto = RequestDto(c2= c2_dto, listener=listener_dto)
+            launcher_type = data['launcher'].launcher_type.name
+            launcher_options = {option.name: option.value for option in data['launcher'].options.all()}
+            launcher_dto = LauncherDto(launcher_type=launcher_type, options=launcher_options)
+
+            dto = RequestDto(c2= c2_dto, listener=listener_dto, launcher=launcher_dto)
         except KeyError as err:
             raise serializers.ValidationError(repr(err))
         return dto

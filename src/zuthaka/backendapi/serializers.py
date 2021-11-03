@@ -396,10 +396,15 @@ class LauncherSerializer(serializers.ModelSerializer):
             
             listener_type = data['listener'].listener_type.name
             listener_options = {option.name: option.value for option in data['listener'].options.all()}
-            listener_dto = ListenerDto(listener_type=listener_type, options=listener_options)
+            listener_internal_id = data['listener'].listener_internal_id
+            listener_dto = ListenerDto(
+                listener_type=listener_type,
+                options=listener_options,
+                listener_internal_id= listener_internal_id
+                )
             
-            launcher_type = data['launcher'].launcher_type.name
-            launcher_options = {option.name: option.value for option in data['launcher'].options.all()}
+            launcher_type = data['launcher_type'].name
+            launcher_options = {option['name']: option['value'] for option in data['options']}
             launcher_dto = LauncherDto(launcher_type=launcher_type, options=launcher_options)
 
             dto = RequestDto(c2= c2_dto, listener=listener_dto, launcher=launcher_dto)

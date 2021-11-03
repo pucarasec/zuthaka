@@ -179,7 +179,7 @@ class LaunchersViewSet(EnablePartialUpdateMixin, ModelViewSet):
 
     def perform_create(self, serializer):
         service = Service.get_service()
-        import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         dto = serializer.to_dto()
         try:
             launcher_created_dto = async_to_sync(service.create_launcher_and_retrieve)(dto)

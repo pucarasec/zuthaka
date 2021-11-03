@@ -266,7 +266,7 @@ class Service():
         logger.debug('response_dto: ',response_dto)
         return response_dto
 
-    async def create_launcher_and_retrieve(self, dto: Dict[str, Any]) -> Dict[str,Any]:
+    async def create_launcher_and_retrieve(self, dto: RequestDto) -> Dict[str,Any]:
         """
         creates a laucnher on the corresponding C2 and return an launcher_internal_id 
            raises ValueError in case of invalid dto
@@ -309,29 +309,29 @@ class Service():
             launcher_dto = dto.launcher
             if not launcher_dto:
                 raise ValueError('invalid dto missing launcher_dto')
-            if not launcher_dto.listener_type:
+            if not launcher_dto.launcher_type:
                 raise ValueError('invalid dto missing launcher_type')
             launcher_types = await current_c2.get_launcher_types()
             launcher_handler = launcher_types[launcher_dto.launcher_type]
 
-            _listener_options = launcher_dto.options
-            internal_id = launcher_dto.listener_internal_id
+            # _listener_options = launcher_dto.options
+            # internal_id = launcher_dto.listener_internal_id
             logger.debug('request dto: ', dto)
-            logger.debug('launcher_types: ', launcher_types)
-            launcher_handler = launcher_types[_launcher_type]
+            # logger.debug('launcher_types: ', launcher_types)
+            # launcher_handler = launcher_types[_launcher_type]
 
             try:
                 # creation_dto = filter_dict(dto, ['listener_internal_id', 'launcher_options'])
-                logger.debug('creation_dto: ', creation_dto)
-                downloaded_launcher =  await asyncio.wait_for(launcher_handler.create_and_retrieve_launcher(creation_dto), timeout=5.0)
-                logger.debug(created_launcher)
+                # logger.debug('creation_dto: ', creation_dto)
+                downloaded_launcher = await asyncio.wait_for(launcher_handler.create_and_retrieve_launcher(launcher_dto.options, dto), timeout=5.0)
+                # logger.debug(created_launcher)
 
                 # retrieve_dto = filter_dict(dto, ['listener_internal_id', 'launcher_options'])
                 # retrieve_dto['launcher_internal_id'] = created_launcher.get('launcher_internal_id')
                 # downloaded_launcher=  await asyncio.wait_for(launcher_handler.download_launcher(retrieve_dto), timeout=5.0)
 
                 response_dto = {}
-                response_dto.update(created_launcher)
+                # response_dto.update(created_launcher)
                 response_dto.update(downloaded_launcher)
                 return response_dto
             except asyncio.TimeoutError:

@@ -35,13 +35,11 @@ class UploadFileDto(NamedTuple):
 class DownloadFileDto(NamedTuple):
     target_directory: str
 
-
+# service
 class C2InstanceDto(NamedTuple):
-    c2_type: str
+    c2: C2Dto
     c2_id: int
-    options: Dict[str, Any] = {}
     listener_ids: Dict[int, str] = {}
-
 
 class RequestDto(NamedTuple):
     c2: C2Dto = None

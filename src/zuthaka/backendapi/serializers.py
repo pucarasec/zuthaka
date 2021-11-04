@@ -446,7 +446,8 @@ class AgentSerializer(serializers.ModelSerializer):
                 c2_id = c2.id
                 c2_options = {option.name:option.value for option in c2.options.all()}
                 listener_ids = {listener.listener_internal_id: listener.id for listener in listeners if listener.c2 == c2} # keys are  the c2's internal ids  and values  are Zuthakas' ids
-                c2_instance = C2InstanceDto(c2_type=c2_type, c2_id=c2_id, options= c2_options, listener_ids = listener_ids)
+                c2 = C2Dto(c2_type=c2_type, options= c2_options)
+                c2_instance = C2InstanceDto(c2=c2, c2_id=c2_id, listener_ids=listener_ids)
                 instances.append(c2_instance)
             dto = RequestDto(c2_instances=instances)
         except KeyError as err:

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod, abstractproperty
 from typing import Dict, List, Iterable, Any, NamedTuple
 
-from ..dtos import RequestDto, ShellExecuteDto
+from ..dtos import RequestDto, ShellExecuteDto, C2Dto
 from asgiref.sync import sync_to_async
 import logging
 logger = logging.getLogger(__name__)
@@ -26,13 +26,6 @@ class OptionDesc(NamedTuple):
     description: str = ''
     field_type: str = ''
     required: bool = True
-
-    # def __str__(self):
-    #     return f'name: {self.name}, example: {self.example}, description: {self.description}, field_type: {self.field_type}, required: {self.required}'
-
-    # def __repr__(self):
-    #     return f'name: {self.name}, example: {self.example}, description: {self.description}, field_type: {self.field_type}, required: {self.required}'
-
 
 class C2(ABC):
     name: str
@@ -72,21 +65,9 @@ class C2(ABC):
             Returns a dictionary with all the registered agents types 
         """
         return self._agent_types
-    # @abstractmethod
-    # async def get_listener_types(self) -> Dict[str, 'ListenerType']:
-    #     """
-    #         Returns a dictionary with all the registered listener types 
-    #     """
-    #     pass
-
-    # @abstractmethod
-    # async def get_launcher_types(self) -> Iterable['LauncherType']:
-    #     """
-    #         Returns a dictionary with all the registered launcher types 
-    #     """
-    #     pass
 
     @abstractmethod
+    # async def retrieve_agents(self, listener_internal_ids: List[int], c2_dto: C2Dto, dto: RequestDto) -> bytes:
     async def retrieve_agents(self, dto: RequestDto) -> bytes:
         """
             retrives all available Agents on the  given C2
@@ -194,31 +175,6 @@ class LauncherType(ABC):
         """
         raise NotImplementedError
 
-    # @abstractmethod
-    # async def create_launcher(self, options: Options, dto: RequestDto) -> str:
-    #     """
-    #     creates a laucnher on the corresponding C2 and return an launcher_internal_id raises ValueError in case of invalid dto
-    #        raises ConectionError in case of not be able to connect to c2 instance
-    #        raises ResourceExistsError in case of not be able to create the objectdue it already exists
-
-    #     """
-    #     raise NotImplementedError
-        
-    # @abstractmethod
-    # async def download_launcher(
-    #     self,
-    #     options: Options,
-    #     dto: RequestDto
-    # ) -> bytes:
-    #     """
-    #     retrives a created launcher using an launcher_internal_id
-    #        raises ValueError in case of invalid dto
-    #        raises ConectionError in case of not be able to connect to c2 instance
-    #        raises ResourceNotFoundError 
-    #     """
-    #     raise NotImplementedError
-
-
 class AgentType(ABC):
 
     async def shell_execute(self, shell_dto: ShellExecuteDto, dto: RequestDto) -> bytes:
@@ -230,39 +186,4 @@ class AgentType(ABC):
 
         """
         pass
-
-# class Launcher(ABC):
-#     @property
-#     @abstractmethod
-#     async def output(self) -> str:
-#         pass
-
-#     @abstractmethod
-#     async def get_options(self) -> Options:
-#         pass
-
-
-# class PostExploitationType(ABC):
-#     async def post_exploitation_execute(self, dto: Dict[str, Any]) -> bytes:
-#         pass
-    
-#     @classmethod
-#     async def to_dto(self):
-#         options = getattr(self, 'registered_options', [])
-#         dto_options = []
-#         for opt in options:
-#             dto_options.append({
-#                 'name' : getattr(self, 'name', ''),
-#                 'type' : getattr(self, 'type', 'string'),
-#                 'default_value' : getattr(self, 'default_value', ''),
-#                 'description' : getattr(self, 'description', ''),
-#                 'example' : getattr(self, 'example', ''),
-#                 'required' : getattr(self, 'required', False),
-#             })
-#         response_dto = {   
-#             'name' : getattr(self, 'name', ''),
-#             'description' : getattr(self, 'description', ''),
-#             'options_description': dto_options,
-#             'id_module' : 1
-#         }
 

@@ -183,7 +183,7 @@ class LaunchersViewSet(EnablePartialUpdateMixin, ModelViewSet):
         dto = serializer.to_dto()
         try:
             launcher_created_dto = async_to_sync(service.create_launcher_and_retrieve)(dto)
-            logger.error("launcher_created_dto: %r", launcher_created_dto)
+            # logger.error("launcher_created_dto: %r", launcher_created_dto)
             validated_data = serializer.validated_data
             new_launcher = serializer.save(listener=validated_data['listener'],launcher_type=validated_data['launcher_type'],launcher_internal_id = launcher_created_dto['launcher_internal_id'])
             new_launcher.launcher_file.save(launcher_created_dto['payload_name'],ContentFile(launcher_created_dto['payload_content']), save=True)

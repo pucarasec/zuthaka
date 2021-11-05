@@ -15,7 +15,7 @@ import logging
 from ..utils import collect_classes
 logger = logging.getLogger(__name__) 
 from .exceptions import ResourceNotFoundError, ResourceExistsError, InconsistencyError
-from ..dtos import C2Dto, ListenerDto, LauncherDto, RequestDto
+from ..dtos import C2Dto, ListenerDto, LauncherDto, RequestDto, DownloadFileDto, UploadFileDto
 
 
 def filter_dict(original_dict, set_of_keys):
@@ -482,7 +482,7 @@ class Service():
         except KeyError as err:
             raise ValueError('Handler not found: {!r}'.format(err))
 
-    async def download_agents_file(self, dto: Dict[str, Any]) -> Dict[str,Any]:
+    async def download_agents_file(self, download_dto: DownloadFileDto, dto: RequestDto) -> Dict[str,Any]:
         """
         executes command  on the  agent's computer
            raises ValueError in case of invalid dto
@@ -511,22 +511,23 @@ class Service():
             }
         """
         try:
-            _c2_type = dto.get('c2_type')
-            current_c2_handler = self._c2types[_c2_type]
-            _c2_options = dto.get('c2_options')
-            current_c2 = current_c2_handler(_c2_options)
+            c2_dto = dto.c2
+            if not c2_dto:
+                raise ValueError('invalid dto missing c2_dto')
+            if not c2_dto.c2_type:
+                raise ValueError('invalid dto missing c2_type')
+            current_c2_handler = self._c2types[c2_dto.c2_type]
+            current_c2 = current_c2_handler(c2_dto.options)
 
             logger.debug('received dto: %r', dto)
 
-            _agent_type = dto.get('agent_shell_type', 'powershell')
-            # _agent_type = 'powershell'
+            shell_dto = dto.shell_execute
+            _agent_type = shell_dto.agent_shell_type
             agent_types = await current_c2.get_agent_types()
             logger.debug('available agent_types in c2 handler: ', agent_types)
             agent_handler = agent_types[_agent_type]
             try:
-                # retrieve_dto = filter_dict(dto, ['', 'launcher_options'])
-                # retrieve_dto['launcher_internal_id'] = created_launcher.get('launcher_internal_id')
-                downloaded_file =  await asyncio.wait_for(agent_handler.download_file(dto), timeout=10.0)
+                downloaded_file =  await asyncio.wait_for(agent_handler.download_file(download_dto, dto), timeout=10.0)
                 logger.debug('service response dto: %r', downloaded_file)
                 response_dto = {}
                 response_dto.update(downloaded_file)

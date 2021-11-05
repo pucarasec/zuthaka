@@ -12,6 +12,8 @@ from .serializers import AgentSerializer
 from .services.async_service import Service # this might be a singleto
 from .services.exceptions import ResourceNotFoundError, ResourceExistsError, InconsistencyError
 
+from .dtos import DownloadFileDto, UploadFileDto
+
 import logging
 import csv
 import re
@@ -210,10 +212,10 @@ class AgentWs():
         # {'type': 'file_manager.download', 'file_path':'C:\\Users'}
         dto = copy(self.agent_dto)
         new_file_path = await parse_directory(file_path, self.agent_model.shell_type)
-        dto['file_path'] = new_file_path
+        download_dto = DownloadFileDto(target_file=new_file_path)
         logger.info("file to download: %r", new_file_path)
         service = Service.get_service()
-        response = await service.download_agents_file(dto)
+        response = await service.download_agents_file(download_dto , dto)
         result = await dto_encodedfile_to_bytes(response)
         return result
 

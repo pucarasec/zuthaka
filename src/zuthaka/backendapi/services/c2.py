@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod, abstractproperty
 from typing import Dict, List, Iterable, Any, NamedTuple
 
-from ..dtos import RequestDto, ShellExecuteDto, C2Dto
+from ..dtos import DownloadFileDto, RequestDto, ShellExecuteDto, UploadFileDto
 from asgiref.sync import sync_to_async
 import logging
 logger = logging.getLogger(__name__)
@@ -187,3 +187,23 @@ class AgentType(ABC):
         """
         pass
 
+
+    async def download_file(self, download_dto: DownloadFileDto, shell_dto: ShellExecuteDto, dto: RequestDto) -> bytes:
+        """
+        downloads required file from the target's machine
+           raises ValueError in case of invalid dto
+           raises ConectionError in case of not be able to connect to c2 instance
+           raises ResourceNotFoundError 
+
+        """
+        pass
+
+    async def upload_file(self, upload_dto: UploadFileDto, shell_dto: ShellExecuteDto, dto: RequestDto) -> bytes:
+        """
+        uploads required file to the target's machine
+           raises ValueError in case of invalid dto
+           raises ConectionError in case of not be able to connect to c2 instance
+           raises ResourceNotFoundError 
+
+        """
+        pass

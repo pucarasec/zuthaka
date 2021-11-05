@@ -23,7 +23,6 @@ class LauncherDto(NamedTuple):
 class ShellExecuteDto(NamedTuple):
     agent_internal_id: str
     agent_shell_type: str
-    command: str = ''
 
 
 class UploadFileDto(NamedTuple):
@@ -33,7 +32,7 @@ class UploadFileDto(NamedTuple):
 
 
 class DownloadFileDto(NamedTuple):
-    target_directory: str
+    target_file: str
 
 # service
 class C2InstanceDto(NamedTuple):

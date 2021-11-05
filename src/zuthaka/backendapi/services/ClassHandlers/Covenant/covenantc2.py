@@ -2,7 +2,7 @@ from .. import ResourceExistsError, ResourceNotFoundError
 # from . import InconsistencyError
 # from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc, PostExploitationType
 from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc
-from ....dtos import RequestDto
+from ....dtos import RequestDto, C2Dto, ShellExecuteDto, DownloadFileDto
 
 import asyncio
 import random
@@ -318,7 +318,7 @@ class PowershellAgentType(AgentType):
         self._url = url
         self._c2 = _c2
 
-    async def shell_execute(self, dto: Dict[str, Any]) -> bytes:
+    async def shell_execute(self,command:str, shell_dto: ShellExecuteDto, dto: RequestDto) -> bytes:
         """
         executes a command string on the 
            raises ValueError in case of invalid dto
@@ -330,9 +330,9 @@ class PowershellAgentType(AgentType):
         try:
             headers = {'Authorization': 'Bearer {}'.format(await self._c2._get_token())}
             target = '{}/api/grunts/{}/interact'.format(
-                self._url, dto['agent_internal_id'])
+                self._url, shell_dto.agent_internal_id)
             interact_post_data = 'PowerShell /powershellcommand:"{}"'.format(
-                dto['command'])
+                command)
 
             response_dto = {}
             command_output_id = ''
@@ -363,13 +363,13 @@ class PowershellAgentType(AgentType):
         except aiohttp.client_exceptions.ClientConnectorError as err:
             raise ConnectionError(err)
 
-    async def download_file(self, dto: Dict[str, Any]) -> bytes:
+    async def download_file(self, download_dto: DownloadFileDto, dto: RequestDto) -> bytes:
         try:
             headers = {'Authorization': 'Bearer {}'.format(await self._c2._get_token())}
             target = '{}/api/grunts/{}/interact'.format(
-                self._url, dto['agent_internal_id'])
-            interact_post_data = 'Download "{}"'.format(dto['file_path'])
-            logger.debug('headers: %r, target: %r, data: %r',headers, target, interact_post_data)
+                self._url, dto.shell_execute.agent_internal_id)
+            interact_post_data = 'Download "{}"'.format(download_dto.target_file)
+            logger.debug('headers: %r, target: %r, data: %r', headers, target, interact_post_data)
 
             response_dto = {}
             command_output_id = ''
@@ -390,7 +390,7 @@ class PowershellAgentType(AgentType):
                             await asyncio.sleep(1)
             else:
                 raise ConnectionError('unable  to retrieve  task')
-            command_output_base_url = '{}/api/commandoutputs/{}'.format( self._url, command_output_id)
+            command_output_base_url = '{}/api/commandoutputs/{}'.format(self._url, command_output_id)
             async with self._c2.get_session() as session:
                 async with session.get(command_output_base_url,  headers=headers) as response:
                     command_response_json = await response.json()
@@ -400,66 +400,3 @@ class PowershellAgentType(AgentType):
             return response_dto
         except aiohttp.client_exceptions.ClientConnectorError as err:
             raise ConnectionError(err)
-
-# class PortScan(PostExploitationType):
-#     name = 'PosrtScan_integration'
-#     description = 'Integration demo for presentation'
-#     documentation = 'https://github.com/cobbr/Covenant/wiki/'
-#     registered_options = [
-#         OptionDesc(
-#             name='target',
-#             description='ip address of target machine',
-#             example='127.0.0.1',
-#             field_type='string',
-#             required=True
-#         ),
-#         OptionDesc(
-#             name='ports',
-#             description='ports to check',
-#             example='8443,80',
-#             field_type='string',
-#             required=True
-#         )]
-
-#     async def post_exploitation_execute(self, dto: Dict[str, Any]) -> bytes:
-#         """
-#         executes a PostExploitation module on the agent  
-#            raises ValueError in case of invalid dto
-#            raises ConectionError in case of not be able to connect to c2 instance
-#            raises ResourceNotFoundError 
-
-#         """
-#         try:
-#             headers = {'Authorization': 'Bearer {}'.format(await self._c2._get_token())}
-#             target = '{}/api/grunts/{}/interact'.format(
-#                 self._url, dto['agent_internal_id'])
-#             interact_post_data = 'PortScan :"{}"'.format( dto['target'], dto['ports'])
-
-#             response_dto = {}
-#             command_output_id = ''
-#             async with self._c2.get_session() as session:
-#                 async with session.post(target, json=interact_post_data, headers=headers) as response:
-#                     command_response_json = await response.json()
-#                     command_output_id = command_response_json.get('commandOutputId')
-
-#             task_status_target = '{}/api/commands/{}'.format(self._url, command_output_id)
-#             for _ in range(40):
-#                 async with self._c2.get_session() as session:
-#                     async with session.get(task_status_target,  headers=headers) as response:
-#                         command_response_json = await response.json()
-#                         status = command_response_json['gruntTasking']['status']
-#                         if status == 'completed':
-#                             break
-#                         else:
-#                             await asyncio.sleep(1)
-#             else:
-#                 raise ConnectionError('unable  to retrieve  task')
-#             command_output_base_url = '{}/api/commandoutputs/{}'.format( self._url, command_output_id)
-#             async with self._c2.get_session() as session:
-#                 async with session.get(command_output_base_url,  headers=headers) as response:
-#                     command_response_json = await response.json()
-#                     command_output = command_response_json['output']
-#                     response_dto['content'] = command_output
-#             return response_dto
-#         except aiohttp.client_exceptions.ClientConnectorError as err:
-#             raise ConnectionError(err)

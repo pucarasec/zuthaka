@@ -137,12 +137,12 @@ class Service():
 
             _listener_options = launcher_dto.options
             try:
-                created_listener = await asyncio.wait_for(
+                response_dto = await asyncio.wait_for(
                     listener_handler.create_listener(_listener_options, dto),
                     timeout=5.0
                 )
                 # add check demo
-                return created_listener
+                return response_dto.created_listener._asdict()
             except asyncio.TimeoutError:
                 raise ConnectionError
 
@@ -246,7 +246,6 @@ class Service():
             listener_ids = c2_instance.listener_ids
             logger.debug('dto: %r', dto)
             logger.debug('listener_ids: %r', listener_ids)
-            # listener_internal_ids = list(listener_ids.keys())
             try:
                 logger.debug('c2: %r',c2)
                 response_obtained_agents =  await asyncio.wait_for(current_c2.retrieve_agents(dto), timeout=5.0)

@@ -2,7 +2,7 @@ from .. import ResourceExistsError, ResourceNotFoundError
 # from . import InconsistencyError
 # from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc, PostExploitationType
 from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc
-from ....dtos import AgentDto, RequestDto, ResponseDto, ShellExecuteDto, DownloadFileDto, UploadFileDto
+from ....dtos import AgentDto, CreateListenerDto, RequestDto, ResponseDto, ShellExecuteDto, DownloadFileDto, UploadFileDto
 
 import asyncio
 import random
@@ -195,9 +195,8 @@ class CovenantHTTPListenerType(ListenerType):
                     if response.ok:
                         options = await response.json()
                         internal_id = options.pop('id')
-                        response_dto = {}
-                        response_dto['listener_internal_id'] = internal_id
-                        response_dto['listener_options'] = await response.json()
+                        created_listener = CreateListenerDto(listener_internal_id=internal_id, listener_options=options)
+                        response_dto = ResponseDto(successful_transaction=True, created_listener=created_listener)
                         return response_dto
                     else:
                         raise ResourceExistsError('Error creating listener: {}'.format(text))
@@ -218,7 +217,8 @@ class CovenantHTTPListenerType(ListenerType):
                 result = await response.text()
                 logger.error('[*] result: %r ', result)
                 if response.ok:
-                    return
+                    response_dto = ResponseDto(successful_transaction=True)
+                    return response_dto
                 else:
                     raise ResourceNotFoundError(
                         'Error fetching listeners: {}'.format(result))

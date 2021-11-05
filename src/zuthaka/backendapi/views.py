@@ -135,8 +135,9 @@ class ListenersViewSet(ModelViewSet):
         service = Service.get_service()
         dto = self.serializer_class.to_dto_from_instance(instance)
         try:
-            listener_internal_id = async_to_sync(service.delete_listener)(dto)
-            instance.delete()
+            response = async_to_sync(service.delete_listener)(dto)
+            if response.successful_transaction:
+                instance.delete()
         except ValueError as err:
             # Malformed DTO
             logger.error(err)

@@ -56,10 +56,12 @@ async def test_create_listener():
     listener_types = await c2_handler.get_listener_types()
     listener_handler = listener_types[listener_dto.listener_type]
     dto = RequestDto(c2=covenant_dto, listener=listener_dto)
-    created_listener = await listener_handler.create_listener(listener_dto.options, dto)
-    assert 'listener_internal_id' in created_listener
+    result = await listener_handler.create_listener(listener_dto.options, dto)
+    assert result.successful_transaction is True
+    created_listener = result.created_listener
+    assert created_listener.listener_internal_id is not None
     global listener_internal_id
-    listener_internal_id =  created_listener['listener_internal_id']
+    listener_internal_id = created_listener.listener_internal_id
 
 @pytest.mark.asyncio
 async def test_delete_listener():
@@ -71,4 +73,4 @@ async def test_delete_listener():
     dto = RequestDto(c2=covenant_dto, listener=listener_dto)
     global listener_internal_id
     response = await listener_handler.delete_listener(listener_internal_id, listener_dto.options, dto)
-    assert response is None
+    assert response.successful_transaction is True

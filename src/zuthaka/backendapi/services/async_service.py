@@ -318,7 +318,8 @@ class Service():
             logger.debug('request dto: ', dto)
 
             try:
-                downloaded_launcher = await asyncio.wait_for(launcher_handler.create_and_retrieve_launcher(launcher_dto.options, dto), timeout=5.0)
+                response = await asyncio.wait_for(launcher_handler.create_and_retrieve_launcher(launcher_dto.options, dto), timeout=5.0)
+                downloaded_launcher = response.created_launcher._asdict()
 
                 response_dto = {}
                 response_dto.update(downloaded_launcher)

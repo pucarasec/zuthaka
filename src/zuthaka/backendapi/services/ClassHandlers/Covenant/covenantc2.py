@@ -3,6 +3,7 @@ from .. import ResourceExistsError, ResourceNotFoundError
 # from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc, PostExploitationType
 from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc
 from ....dtos import AgentDto, CreateListenerDto, RequestDto, ResponseDto, ShellExecuteDto, DownloadFileDto, UploadFileDto
+from ....dtos import CreateLauncherDto
 
 import asyncio
 import random
@@ -242,8 +243,6 @@ class CovenantPowershellLauncherType(LauncherType):
         self._c2 = _c2
     
     async def create_and_retrieve_launcher(self, options: Options, dto: RequestDto):
-        # options = dto.get('launcher_options')
-        response_dto = {}
         try:
             headers = {'Authorization': 'Bearer {}'.format(await self._c2._get_token())}
             target = '{}/api/launchers/powershell'.format(self._url)
@@ -256,9 +255,8 @@ class CovenantPowershellLauncherType(LauncherType):
             }  
             async with self._c2.get_session() as session:
                 async with session.put(target, headers=headers, json=creation_dict) as response:
-                    response_dto['launcher_internal_id'] = ''
-                    response_dto['launcher_options'] = await response.json()
-                    # return response_dto
+                    launcher_internal_id = ''
+                    launcher_options = await response.json()
         except aiohttp.client_exceptions.ClientConnectorError as err:
             raise ConnectionError(err)
         try:
@@ -267,8 +265,15 @@ class CovenantPowershellLauncherType(LauncherType):
             async with self._c2.get_session() as session:
                 async with session.post(target, headers=headers) as response:
                     response_dict = await response.json()
-                    response_dto['payload_content'] = response_dict["encodedLauncherString"]
-                    response_dto['payload_name'] = response_dict["name"] + '.ps1'
+                    payload_content = response_dict["encodedLauncherString"]
+                    payload_name = response_dict["name"] + '.ps1'
+                    created_dto = CreateLauncherDto(
+                        launcher_internal_id='',
+                        payload_content=payload_content,
+                        payload_name=payload_name,
+                        launcher_options=launcher_options
+                    )
+                    response_dto = ResponseDto(successful_transaction=True, created_launcher=created_dto)
                     logger.debug('[*] payload_name: %r ',  response_dict['name'])
                     return response_dto
         except aiohttp.client_exceptions.ClientConnectorError as err:

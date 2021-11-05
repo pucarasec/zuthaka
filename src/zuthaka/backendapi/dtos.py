@@ -59,13 +59,10 @@ class CreateListenerDto(NamedTuple):
 
 
 class CreateLauncherDto(NamedTuple):
-    launcher_internal_id: str
     launcher_options: dict[str, Any]
-
-
-class DownloadLauncherDto(NamedTuple):
-    paload_content: str  # encoded launcher
+    payload_content: str  # encoded b64
     payload_name: str
+    launcher_internal_id: str = ""
 
 
 class AgentDto(NamedTuple):
@@ -85,5 +82,4 @@ class ResponseDto(NamedTuple):
     agents: List[AgentDto] = None
     created_listener: CreateListenerDto = None
     created_launcher: CreateLauncherDto = None
-    downloaded_launcher: DownloadLauncherDto = None
     downloaded_file: DownloadFileDto = None

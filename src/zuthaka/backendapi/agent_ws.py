@@ -201,7 +201,7 @@ class AgentWs():
     async def upload_file(self, transition_file, target_directory):
         # {'type': 'file_manager.upload', 'target_directory':'C:\\some_path', "reference":"77777-aaaaaaaa-1111-33333333"}
         dto = copy(self.agent_dto)
-        target_directory = await parse_directory(target_directory, self.agent_model.shell_type)
+        target_directory = await parse_directory(target_directory, self.agent_model.agent_shell_type)
         file_name, file_content = await field_file_to_dto(transition_file)
         upload_dto = UploadFileDto(target_directory=target_directory,file_name=file_name, file_content=file_content)
         # logger.info("dto to execute: %r", dto)
@@ -212,7 +212,7 @@ class AgentWs():
     async def download_file(self, file_path):
         # {'type': 'file_manager.download', 'file_path':'C:\\Users'}
         dto = copy(self.agent_dto)
-        new_file_path = await parse_directory(file_path, self.agent_model.shell_type)
+        new_file_path = await parse_directory(file_path, self.agent_model.agent_shell_type)
         download_dto = DownloadFileDto(target_file=new_file_path)
         logger.info("file to download: %r", new_file_path)
         service = Service.get_service()
@@ -227,7 +227,7 @@ class AgentWs():
             "powershell": ("tasklist /v /FO:CSV", parser_tasklist_list_process),
             # "powershell": ("Get-Process | Sort-Object Id | Select-Object Id, CPU,HasExited, StartTime, ProcessName | ConvertTo-CSV -NoTypeInformation ", parser_powershell_list_processes)
         }
-        command, parser = shell_processes_listing[self.agent_model.shell_type]
+        command, parser = shell_processes_listing[self.agent_model.agent_shell_type]
         logger.debug("command:%r", command)
         response = await self.execute(command)
         logger.debug("response:%r", response)
@@ -245,7 +245,7 @@ class AgentWs():
             # "powershell": ("gci -Force  {} | Select-Object Mode,LastWriteTimeUtc, Length, Name | ConvertTO-CSV -NoTypeInformation ", parser_powershell_list_directory)
             "powershell": ("gci -Force {} | Select Mode,Length, @{{Name=\"LastWriteTimeUtc\"; Expression={{$_.LastWriteTimeUTC.ToString(\"yyyy-MM-dd HH:mm:ss\")}}}},Name | ConvertTO-CSV -NoTypeInformation ", parser_powershell_list_directory)
         }
-        new_directory = await parse_directory(directory, self.agent_model.shell_type)
+        new_directory = await parse_directory(directory, self.agent_model.agent_shell_type)
         command = shell_listing_dictionary['powershell'][0].format(new_directory)
         parser = shell_listing_dictionary['powershell'][1]
         # logger.debug("command:%r", command)

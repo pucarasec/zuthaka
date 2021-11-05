@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod, abstractproperty
 from typing import Dict, List, Iterable, Any, NamedTuple
 
 from ..dtos import DownloadFileDto, RequestDto, ShellExecuteDto, UploadFileDto
+from ..dtos import ResponseDto
 from asgiref.sync import sync_to_async
 import logging
 logger = logging.getLogger(__name__)
@@ -38,15 +39,15 @@ class C2(ABC):
         if not _is_valid:
             raise ValueError('Invalid options')
         self.options = options
+    
+    @classmethod
+    def validate_options(cls, options: Options) -> bool:
+        # logger.debug('options: %s', options)
+        for option in cls.registered_options:
+            if option.name not in options:
+                logger.debug('option missing: %r', option)
+        return all(option.name in options for option in cls.registered_options)
 
-    @abstractmethod
-    async def is_alive(self, request_dto: RequestDto) -> bool:
-        """
-            tries to connect to the corresponding c2 and returns bool
-            raises ConectionError in case of not be able to connect to c2 instance
-            raises ConnectionRefusedError in case of not be able to authenticate
-        """
-        pass
     
     async def get_listener_types(self) -> Iterable['ListenerType']:
         """
@@ -67,8 +68,17 @@ class C2(ABC):
         return self._agent_types
 
     @abstractmethod
+    async def is_alive(self, request_dto: RequestDto) -> ResponseDto:
+        """
+            tries to connect to the corresponding c2 and returns bool
+            raises ConectionError in case of not be able to connect to c2 instance
+            raises ConnectionRefusedError in case of not be able to authenticate
+        """
+        pass
+
+    @abstractmethod
     # async def retrieve_agents(self, listener_internal_ids: List[int], c2_dto: C2Dto, dto: RequestDto) -> bytes:
-    async def retrieve_agents(self, dto: RequestDto) -> bytes:
+    async def retrieve_agents(self, dto: RequestDto) -> ResponseDto:
         """
             retrives all available Agents on the  given C2
                raises ValueError in case of invalid dto
@@ -93,20 +103,12 @@ class C2(ABC):
                 'hostname' : '',
                 'username' : '',
                 'internal_id' : ''
-                'shell_type' : ''
+                'agent_shell_type' : ''
                 'listener_internal_id' : ''
                 }, ]
                 }
         """
         pass
-    
-    @classmethod
-    def validate_options(cls, options: Options) -> bool:
-        # logger.debug('options: %s', options)
-        for option in cls.registered_options:
-            if option.name not in options:
-                logger.debug('option missing: %r', option)
-        return all(option.name in options for option in cls.registered_options)
 
 
 class ListenerType(ABC):

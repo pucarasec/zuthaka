@@ -34,11 +34,13 @@ class UploadFileDto(NamedTuple):
 class DownloadFileDto(NamedTuple):
     target_file: str
 
+
 # service
 class C2InstanceDto(NamedTuple):
     c2: C2Dto
     c2_id: int
     listener_ids: Dict[int, str] = {}
+
 
 class RequestDto(NamedTuple):
     c2: C2Dto = None
@@ -69,16 +71,17 @@ class DownloadLauncherDto(NamedTuple):
 class AgentDto(NamedTuple):
     last_connection: date
     first_connection: date
-    interpreter:  str
     internal_id:  str
-    acvtive: bool
+    active: bool
     listener_internal_id:  str
     hostname: str = ''
     username: str = ''
+    agent_shell_type: str = ''
     # c2_id:  str
 
 
 class ResponseDto(NamedTuple):
+    successful_transaction: bool
     agents: List[AgentDto] = None
     created_listener: CreateListenerDto = None
     created_launcher: CreateLauncherDto = None

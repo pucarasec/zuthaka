@@ -140,7 +140,7 @@ class Agent(models.Model):
     username = models.CharField(max_length=250, blank=True, null=True)
     hostname = models.CharField(max_length=250, blank=True, null=True)
     internal_id = models.CharField(max_length=250, blank=True, null=True)
-    shell_type = models.CharField(max_length=250, blank=True, null=True)
+    agent_shell_type = models.CharField(max_length=250, blank=True, null=True)
     active = models.BooleanField(default=False)
 
 

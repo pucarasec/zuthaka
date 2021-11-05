@@ -418,7 +418,7 @@ class AgentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Agent
-        fields = ('id', 'c2', 'listener', 'first_conection', 'last_conection', 'username', 'hostname', 'internal_id', 'shell_type', 'active')
+        fields = ('id', 'c2', 'listener', 'first_conection', 'last_conection', 'username', 'hostname', 'internal_id', 'agent_shell_type', 'active')
         # read_only_fields = ('id', 'c2', 'listener', 'creation_date',
         #                     'first_conection', 'last_conection', 'username', 'hostname')
 
@@ -484,21 +484,10 @@ class AgentSerializer(serializers.ModelSerializer):
             listener_dto = ListenerDto(listener_type= listener_type, options = listener_options, listener_internal_id=listener_internal_id)
 
             agent_internal_id = instance.internal_id
-            shell_type = instance.shell_type
+            shell_type = instance.agent_shell_type
             shell_dto = ShellExecuteDto(agent_internal_id=agent_internal_id, agent_shell_type=shell_type)
 
             dto = RequestDto(c2= c2_dto, listener= listener_dto, shell_execute=shell_dto)
-
-            # _c2 = C2.objects.get(pk=instance.c2_id)
-            # dto['c2_type'] = _c2.c2_type.name
-            # dto['c2_options'] = {option.name:option.value for option in _c2.options.all()}
-
-            # _listener = Listener.objects.get(pk=instance.listener_id)
-            # dto['listener_type'] = _listener.listener_type.name
-            # dto['listener_options'] = {elem.name:elem.value for elem in _listener.options.all()}
-            # dto['listener_internal_id'] = _listener.listener_internal_id
-            # dto['agent_internal_id'] = instance.internal_id
-            # dto['agent_shell_type'] = instance.shell_type
 
         except KeyError as err:
             raise serializers.ValidationError(repr(err))

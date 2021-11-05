@@ -80,14 +80,14 @@ class Service():
             current_c2_handler = self._c2types[dto.c2.c2_type]
             current_c2 = current_c2_handler(dto.c2.options)
             try:
-                is_alive = await asyncio.wait_for(
+                response = await asyncio.wait_for(
                     current_c2.is_alive(dto), timeout=5.0
                     )
-                # logger.debug('is_alive: %r', is_alive)
-                    
+                if response.successful_transaction is not True:
+                    raise ConnectionError
+                return response.successful_transaction
             except asyncio.TimeoutError:
                 raise ConnectionError
-            return is_alive
         except KeyError as e:
             raise ValueError('Handler not found: {!r}'.format(e))
 
@@ -238,7 +238,7 @@ class Service():
             ] }
 
         """
-        response_dto = {'agents':[]}
+        response_dto = {'agents': []}
         for c2_instance in dto.c2_instances:
             c2 = c2_instance.c2
             current_c2_handler = self._c2types[c2.c2_type]
@@ -249,50 +249,24 @@ class Service():
             # listener_internal_ids = list(listener_ids.keys())
             try:
                 logger.debug('c2: %r',c2)
-                obtained_agents =  await asyncio.wait_for(current_c2.retrieve_agents(dto), timeout=5.0)
-                logger.debug('obtained_agents: %r',obtained_agents)
+                response_obtained_agents =  await asyncio.wait_for(current_c2.retrieve_agents(dto), timeout=5.0)
+                logger.debug('obtained_agents: %r', response_obtained_agents)
                 current_agents = []
-                for agent in obtained_agents['agents']:
-                    if str(agent['listener_internal_id']) in  listener_ids:
+                obtained_agents = [ag._asdict() for ag in response_obtained_agents.agents]
+                for agent in obtained_agents:
+                    if str(agent['listener_internal_id']) in listener_ids:
                         new_agent = {}
                         new_agent.update(agent)
-                        new_agent.update({'c2_id' :c2_instance.c2_id})
-                        new_agent.update({'listener_id' :listener_ids[str(agent['listener_internal_id'])]})
+                        new_agent.update({'c2_id': c2_instance.c2_id})
+                        new_agent.update({'listener_id': listener_ids[str(agent['listener_internal_id'])]})
                         current_agents.append(new_agent)
-                logger.debug('current_agents: %r',current_agents)
+                logger.debug('current_agents: %r', current_agents)
                 response_dto['agents'] += current_agents
-                logger.debug('response_dto: %r',response_dto)
+                logger.debug('response_dto: %r', response_dto)
             except asyncio.TimeoutError:
                 raise ConnectionError
-        logger.debug('response_dto: ',response_dto)
+        logger.debug('response_dto: ', response_dto)
         return response_dto
-        # response_dto = {'agents':[]}
-        # for c2 in dto['c2_instances']:
-        #     current_c2_handler = self._c2types[c2['c2_type']]
-        #     current_c2 = current_c2_handler(c2['c2_options'])
-        #     listener_ids = c2.pop('listener_ids')
-        #     logger.debug('listener_ids: %r', listener_ids)
-        #     logger.debug('dto: %r', dto)
-        #     c2['listener_internal_ids'] = list(listener_ids.keys())
-        #     try:
-        #         logger.debug('c2: ',c2)
-        #         obtained_agents =  await asyncio.wait_for(current_c2.retrieve_agents(c2), timeout=5.0)
-        #         logger.debug('obtained_agents: %r',obtained_agents)
-        #         current_agents = []
-        #         for agent in obtained_agents['agents']:
-        #             if str(agent['listener_internal_id']) in  listener_ids:
-        #                 new_agent = {}
-        #                 new_agent.update(agent)
-        #                 new_agent.update({'c2_id' :c2['c2_id']})
-        #                 new_agent.update({'listener_id' :listener_ids[str(agent['listener_internal_id'])]})
-        #                 current_agents.append(new_agent)
-        #         logger.debug('current_agents: %r',current_agents)
-        #         response_dto['agents'] += current_agents
-        #         logger.debug('response_dto: %r',response_dto)
-        #     except asyncio.TimeoutError:
-        #         raise ConnectionError
-        # logger.debug('response_dto: ',response_dto)
-        # return response_dto
 
     async def create_launcher_and_retrieve(self, dto: RequestDto) -> Dict[str,Any]:
         """

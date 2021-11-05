@@ -1,18 +1,15 @@
 from .. import ResourceExistsError, ResourceNotFoundError
-# from . import InconsistencyError
-from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc, PostExploitationType
+from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc
+from ....dtos import AgentDto, CreateListenerDto, RequestDto, ResponseDto, ShellExecuteDto, DownloadFileDto, UploadFileDto
+from ....dtos import CreateLauncherDto
 
 import asyncio
 import random
 import string
-from typing import Iterable, Optional, Type, Dict, Any, IO
-import json
+from typing import  Optional, Dict
+import aiohttp
 import logging
 logger = logging.getLogger(__name__)
-
-import aiohttp
-import requests
-import io
 
 
 class CovenantC2(C2):
@@ -75,6 +72,7 @@ class CovenantC2(C2):
         target = self.options['url'] + '/api/users/login'
         async with self.get_session() as session:
             async with session.post(target, json=data) as response:
+                # logger.debug('response: %s', response)
                 result = await response.json()
                 if result['success']:
                     self._token = result['covenantToken']
@@ -83,50 +81,47 @@ class CovenantC2(C2):
                         'Error Authenticating: {}'.format(result))
         return self._token
 
-    async def is_alive(self) -> bool:
+    async def is_alive(self, requestDto: RequestDto) -> ResponseDto:
         try:
-            await self._get_token()
+            logger.debug('requestDto: %s', requestDto)
+            token = await self._get_token()
+            response = ResponseDto(successful_transaction=bool(token))
+            return response
         except aiohttp.InvalidURL as er:
-
             raise ValueError(repr(er))
         except aiohttp.ClientError as er:
             if hasattr(er, 'code') and er.code == 400:
                 raise ConnectionRefusedError(repr(er))
             raise ConnectionError(repr(er))
 
-    async def get_listener_types(self) -> Iterable[ListenerType]:
-        return self._listener_types
-
-    async def get_launcher_types(self) -> Iterable[LauncherType]:
-        return self._launcher_types
-
-    async def get_agent_types(self) -> Iterable[LauncherType]:
-        return self._agent_types
-
-    async def retrieve_agents(self, dto: Dict[str, Any]) -> bytes:
+    async def retrieve_agents(self, dto: RequestDto) -> bytes:
         try:
             headers = {'Authorization': 'Bearer {}'.format(await self._get_token())}
             target = '{}/api/grunts'.format(self.options['url'])
 
-            response_dto = {'agents': []}
+            agents = []
             async with self.get_session() as session:
                 async with session.get(target, headers=headers) as response:
                     current_agents = await response.json()
                     logger.debug('current_agents: %r', len(current_agents))
                     for agent in current_agents:
                         new_agent = {}
-                        new_agent['first_connection'] = agent['activationTime']
-                        new_agent['last_connection'] = agent['lastCheckIn']
-                        new_agent['hostname'] = agent['hostname']
-                        new_agent['username'] = agent['userName']
-                        new_agent['internal_id'] = agent['id']
-                        new_agent['shell_type'] = 'powershell'
-                        new_agent['active'] = True
-                        new_agent['listener_internal_id'] = agent['listenerId']
-                        response_dto['agents'].append(new_agent)
+                        new_agent = AgentDto(
+                            first_connection=agent['activationTime'],
+                            last_connection=agent['lastCheckIn'],
+                            hostname=agent['hostname'],
+                            username=agent['userName'],
+                            internal_id=agent['id'],
+                            agent_shell_type='powershell',
+                            active=True,
+                            listener_internal_id=agent['listenerId']
+                        )
+                        agents.append(new_agent)
+                    response_dto = ResponseDto(successful_transaction=True, agents=agents)
                     return response_dto
         except aiohttp.client_exceptions.ClientConnectorError as err:
             raise ConnectionError(err)
+
 
 class CovenantHTTPListenerType(ListenerType):
     name = 'default-http-profile'
@@ -159,8 +154,7 @@ class CovenantHTTPListenerType(ListenerType):
         self._url = url
         self._c2 = _c2
 
-    async def create_listener(self, options: Options) -> Dict:
-        logger.debug('[*] options:', options)
+    async def create_listener(self, options: Options, dto: RequestDto) -> Dict:
         connect_address = options.get('connectAddresses', '')
         connect_port = options.get('connectPort', '')
         if not connect_address or not connect_port:
@@ -184,36 +178,49 @@ class CovenantHTTPListenerType(ListenerType):
             "status": "Active",
         }
         try:
-            headers = {'Authorization': 'Bearer {}'.format(await self._c2._get_token())}
+            headers = {'Authorization': 'Bearer {}'.format(
+                await self._c2._get_token()
+            )}
             target = '{}/api/listeners/http'.format(self._url)
 
             async with self._c2.get_session() as session:
-                async with session.post(target, headers=headers, json=covenant_dict) as response:
+                async with session.post(
+                    target,
+                    headers=headers,
+                    json=covenant_dict
+                ) as response:
                     text = await response.text()
                     if response.ok:
                         options = await response.json()
                         internal_id = options.pop('id')
-                        response_dto = {}
-                        response_dto['listener_internal_id'] = internal_id
-                        response_dto['listener_options'] = await response.json()
+                        created_listener = CreateListenerDto(listener_internal_id=internal_id, listener_options=options)
+                        response_dto = ResponseDto(successful_transaction=True, created_listener=created_listener)
                         return response_dto
                     else:
                         raise ResourceExistsError('Error creating listener: {}'.format(text))
         except aiohttp.client_exceptions.ClientConnectorError as err:
             raise ConnectionError(err)
 
-    async def delete_listener(self, internal_id: str, options: Options) -> None:
-        headers = {'Authorization': 'Bearer {}'.format(await self._c2._get_token())}
+    async def delete_listener(
+        self,
+        internal_id: str,
+        options: Options,
+        dto: RequestDto
+    ) -> None:
+        headers = {'Authorization': 'Bearer {}'
+                   .format(await self._c2._get_token())}
         target = '{}/api/listeners/{}'.format(self._url, internal_id)
-        async with self.get_session() as session:
+        async with self._c2.get_session() as session:
             async with session.delete(target, headers=headers) as response:
-                result = await response.text
+                result = await response.text()
                 logger.error('[*] result: %r ', result)
                 if response.ok:
-                    return
+                    response_dto = ResponseDto(successful_transaction=True)
+                    return response_dto
                 else:
                     raise ResourceNotFoundError(
                         'Error fetching listeners: {}'.format(result))
+
 
 class CovenantPowershellLauncherType(LauncherType):
     name = 'Powershell Launcher'
@@ -231,13 +238,12 @@ class CovenantPowershellLauncherType(LauncherType):
     def __init__(self, url: str,  _c2: CovenantC2) -> None:
         self._url = url
         self._c2 = _c2
-
-    async def create_launcher(self, dto: Dict[str, Any]) -> str:
-        options = dto.get('launcher_options')
+    
+    async def create_and_retrieve_launcher(self, options: Options, dto: RequestDto):
         try:
             headers = {'Authorization': 'Bearer {}'.format(await self._c2._get_token())}
             target = '{}/api/launchers/powershell'.format(self._url)
-            listener_id = dto.get('listener_internal_id')
+            listener_id = dto.listener.listener_internal_id
 
             creation_dict = {
                 "listenerId": listener_id,
@@ -246,38 +252,39 @@ class CovenantPowershellLauncherType(LauncherType):
             }  
             async with self._c2.get_session() as session:
                 async with session.put(target, headers=headers, json=creation_dict) as response:
-                    text = await response.text()
-                    response_dto = {}
-                    response_dto['launcher_internal_id'] = ''
-                    response_dto['launcher_options'] = await response.json()
-                    return response_dto
+                    launcher_internal_id = ''
+                    launcher_options = await response.json()
         except aiohttp.client_exceptions.ClientConnectorError as err:
             raise ConnectionError(err)
-
-    async def download_launcher(self, dto: Dict[str, Any]) -> IO:
         try:
             headers = {'Authorization': 'Bearer {}'.format(await self._c2._get_token())}
             target = '{}/api/launchers/powershell'.format(self._url)
-            response_dto = {}
             async with self._c2.get_session() as session:
                 async with session.post(target, headers=headers) as response:
                     response_dict = await response.json()
-                    # logger.debug('[*] response_dict: %r ',  response_dict.keys())
-                    response_dto['payload_content'] = response_dict["encodedLauncherString"]
-                    response_dto['payload_name'] = response_dict["name"] + '.ps1'
+                    payload_content = response_dict["encodedLauncherString"]
+                    payload_name = response_dict["name"] + '.ps1'
+                    created_dto = CreateLauncherDto(
+                        launcher_internal_id='',
+                        payload_content=payload_content,
+                        payload_name=payload_name,
+                        launcher_options=launcher_options
+                    )
+                    response_dto = ResponseDto(successful_transaction=True, created_launcher=created_dto)
                     logger.debug('[*] payload_name: %r ',  response_dict['name'])
                     return response_dto
         except aiohttp.client_exceptions.ClientConnectorError as err:
             raise ConnectionError(err)
 
+
 class PowershellAgentType(AgentType):
-    shell_type = 'powershell'
+    agent_shell_type = 'powershell'
 
     def __init__(self, url: str, _c2: CovenantC2) -> None:
         self._url = url
         self._c2 = _c2
 
-    async def shell_execute(self, dto: Dict[str, Any]) -> bytes:
+    async def shell_execute(self,command:str, shell_dto: ShellExecuteDto, dto: RequestDto) -> bytes:
         """
         executes a command string on the 
            raises ValueError in case of invalid dto
@@ -289,9 +296,9 @@ class PowershellAgentType(AgentType):
         try:
             headers = {'Authorization': 'Bearer {}'.format(await self._c2._get_token())}
             target = '{}/api/grunts/{}/interact'.format(
-                self._url, dto['agent_internal_id'])
+                self._url, shell_dto.agent_internal_id)
             interact_post_data = 'PowerShell /powershellcommand:"{}"'.format(
-                dto['command'])
+                command)
 
             response_dto = {}
             command_output_id = ''
@@ -322,13 +329,13 @@ class PowershellAgentType(AgentType):
         except aiohttp.client_exceptions.ClientConnectorError as err:
             raise ConnectionError(err)
 
-    async def download_file(self, dto: Dict[str, Any]) -> bytes:
+    async def download_file(self, download_dto: DownloadFileDto, dto: RequestDto) -> bytes:
         try:
             headers = {'Authorization': 'Bearer {}'.format(await self._c2._get_token())}
             target = '{}/api/grunts/{}/interact'.format(
-                self._url, dto['agent_internal_id'])
-            interact_post_data = 'Download "{}"'.format(dto['file_path'])
-            logger.debug('headers: %r, target: %r, data: %r',headers, target, interact_post_data)
+                self._url, dto.shell_execute.agent_internal_id)
+            interact_post_data = 'Download "{}"'.format(download_dto.target_file)
+            logger.debug('headers: %r, target: %r, data: %r', headers, target, interact_post_data)
 
             response_dto = {}
             command_output_id = ''
@@ -349,7 +356,7 @@ class PowershellAgentType(AgentType):
                             await asyncio.sleep(1)
             else:
                 raise ConnectionError('unable  to retrieve  task')
-            command_output_base_url = '{}/api/commandoutputs/{}'.format( self._url, command_output_id)
+            command_output_base_url = '{}/api/commandoutputs/{}'.format(self._url, command_output_id)
             async with self._c2.get_session() as session:
                 async with session.get(command_output_base_url,  headers=headers) as response:
                     command_response_json = await response.json()
@@ -360,39 +367,17 @@ class PowershellAgentType(AgentType):
         except aiohttp.client_exceptions.ClientConnectorError as err:
             raise ConnectionError(err)
 
-class PortScan(PostExploitationType):
-    name = 'PosrtScan_integration'
-    description = 'Integration demo for presentation'
-    documentation = 'https://github.com/cobbr/Covenant/wiki/'
-    registered_options = [
-        OptionDesc(
-            name='target',
-            description='ip address of target machine',
-            example='127.0.0.1',
-            field_type='string',
-            required=True
-        ),
-        OptionDesc(
-            name='ports',
-            description='ports to check',
-            example='8443,80',
-            field_type='string',
-            required=True
-        )]
 
-    async def post_exploitation_execute(self, dto: Dict[str, Any]) -> bytes:
-        """
-        executes a PostExploitation module on the agent  
-           raises ValueError in case of invalid dto
-           raises ConectionError in case of not be able to connect to c2 instance
-           raises ResourceNotFoundError 
-
-        """
+    async def upload_file(self, upload_dto: UploadFileDto, dto: RequestDto) -> bytes:
         try:
             headers = {'Authorization': 'Bearer {}'.format(await self._c2._get_token())}
             target = '{}/api/grunts/{}/interact'.format(
-                self._url, dto['agent_internal_id'])
-            interact_post_data = 'PortScan :"{}"'.format( dto['target'], dto['ports'])
+                self._url, dto.shell_execute.agent_internal_id)
+            interact_post_data = 'Upload /filepath:"{}" /filecontents:"{}"'.format(
+                upload_dto.target_directory + upload_dto.file_name,
+                upload_dto.file_content
+                )
+            logger.debug('interact_post_data: %r', interact_post_data)
 
             response_dto = {}
             command_output_id = ''
@@ -408,17 +393,10 @@ class PortScan(PostExploitationType):
                         command_response_json = await response.json()
                         status = command_response_json['gruntTasking']['status']
                         if status == 'completed':
-                            break
+                            return
                         else:
                             await asyncio.sleep(1)
             else:
                 raise ConnectionError('unable  to retrieve  task')
-            command_output_base_url = '{}/api/commandoutputs/{}'.format( self._url, command_output_id)
-            async with self._c2.get_session() as session:
-                async with session.get(command_output_base_url,  headers=headers) as response:
-                    command_response_json = await response.json()
-                    command_output = command_response_json['output']
-                    response_dto['content'] = command_output
-            return response_dto
         except aiohttp.client_exceptions.ClientConnectorError as err:
             raise ConnectionError(err)

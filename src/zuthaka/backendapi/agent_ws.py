@@ -12,6 +12,8 @@ from .serializers import AgentSerializer
 from .services.async_service import Service # this might be a singleto
 from .services.exceptions import ResourceNotFoundError, ResourceExistsError, InconsistencyError
 
+from .dtos import DownloadFileDto, UploadFileDto
+
 import logging
 import csv
 import re
@@ -154,14 +156,14 @@ def dto_encodedfile_to_bytes(dto):
     return content
 
 @sync_to_async
-def field_file_to_dto(field_file, dto):
+def field_file_to_dto(field_file):
     name = field_file.name
     b64_content = '' 
     with field_file.open(mode='rb') as f:
         content = f.read()
         b64_content = base64.b64encode(content)
-    dto.update({'file_name':name, 'file_content': b64_content.decode('utf-8')})
-    return dto
+    # dto.update({'file_name':name, 'file_content': b64_content.decode('utf-8')})
+    return name, b64_content.decode('utf-8')
 
 class AgentWs():
     '''
@@ -176,10 +178,11 @@ class AgentWs():
 
     async def execute(self, cmd):
         dto = copy(self.agent_dto)
-        dto['command'] = cmd
+        shell_dto = dto.shell_execute
+        # shell_dto.command = cmd
         logger.info("command to execute: %r", cmd)
         service = Service.get_service()
-        response = await service.shell_execute(dto)
+        response = await service.shell_execute(cmd, dto)
         return response
     
     async def shell_execute(self, command):
@@ -198,21 +201,22 @@ class AgentWs():
     async def upload_file(self, transition_file, target_directory):
         # {'type': 'file_manager.upload', 'target_directory':'C:\\some_path', "reference":"77777-aaaaaaaa-1111-33333333"}
         dto = copy(self.agent_dto)
-        dto['target_directory'] = await parse_directory(target_directory, self.agent_model.shell_type)
-        dto = await field_file_to_dto(transition_file, dto)
-        logger.info("dto to execute: %r", dto)
+        target_directory = await parse_directory(target_directory, self.agent_model.agent_shell_type)
+        file_name, file_content = await field_file_to_dto(transition_file)
+        upload_dto = UploadFileDto(target_directory=target_directory,file_name=file_name, file_content=file_content)
+        # logger.info("dto to execute: %r", dto)
         service = Service.get_service()
-        response = await service.upload_agents_file(dto)
+        response = await service.upload_agents_file(upload_dto, dto)
         return response
 
     async def download_file(self, file_path):
         # {'type': 'file_manager.download', 'file_path':'C:\\Users'}
         dto = copy(self.agent_dto)
-        new_file_path = await parse_directory(file_path, self.agent_model.shell_type)
-        dto['file_path'] = new_file_path
+        new_file_path = await parse_directory(file_path, self.agent_model.agent_shell_type)
+        download_dto = DownloadFileDto(target_file=new_file_path)
         logger.info("file to download: %r", new_file_path)
         service = Service.get_service()
-        response = await service.download_agents_file(dto)
+        response = await service.download_agents_file(download_dto , dto)
         result = await dto_encodedfile_to_bytes(response)
         return result
 
@@ -223,7 +227,7 @@ class AgentWs():
             "powershell": ("tasklist /v /FO:CSV", parser_tasklist_list_process),
             # "powershell": ("Get-Process | Sort-Object Id | Select-Object Id, CPU,HasExited, StartTime, ProcessName | ConvertTo-CSV -NoTypeInformation ", parser_powershell_list_processes)
         }
-        command, parser = shell_processes_listing[self.agent_model.shell_type]
+        command, parser = shell_processes_listing[self.agent_model.agent_shell_type]
         logger.debug("command:%r", command)
         response = await self.execute(command)
         logger.debug("response:%r", response)
@@ -241,7 +245,7 @@ class AgentWs():
             # "powershell": ("gci -Force  {} | Select-Object Mode,LastWriteTimeUtc, Length, Name | ConvertTO-CSV -NoTypeInformation ", parser_powershell_list_directory)
             "powershell": ("gci -Force {} | Select Mode,Length, @{{Name=\"LastWriteTimeUtc\"; Expression={{$_.LastWriteTimeUTC.ToString(\"yyyy-MM-dd HH:mm:ss\")}}}},Name | ConvertTO-CSV -NoTypeInformation ", parser_powershell_list_directory)
         }
-        new_directory = await parse_directory(directory, self.agent_model.shell_type)
+        new_directory = await parse_directory(directory, self.agent_model.agent_shell_type)
         command = shell_listing_dictionary['powershell'][0].format(new_directory)
         parser = shell_listing_dictionary['powershell'][1]
         # logger.debug("command:%r", command)

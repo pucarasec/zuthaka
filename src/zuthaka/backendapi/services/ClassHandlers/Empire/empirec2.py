@@ -1,12 +1,12 @@
 from .. import ResourceExistsError, ResourceNotFoundError
 # from . import InconsistencyError
-from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc, PostExploitationType
+# from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc, PostExploitationType
+from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc
 
 import asyncio
 import random
 import string
 from typing import Iterable, Optional, Type, Dict, Any, IO
-import json
 import logging
 logger = logging.getLogger(__name__)
 

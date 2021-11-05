@@ -47,7 +47,8 @@ from .services.async_service import Service
 
 class C2sViewSet(ModelViewSet):
     '''
-        Real Business Logic '''
+        Real Business Logic 
+    '''
     queryset = C2.objects.all()
     serializer_class = C2Serializer
     filter_backends = (filters.DjangoFilterBackend,)
@@ -57,7 +58,7 @@ class C2sViewSet(ModelViewSet):
         service = Service.get_service()
         dto = serializer.to_dto()
         try:
-            is_alive  = async_to_sync(service.isalive_c2)(dto)
+            is_alive = async_to_sync(service.isalive_c2)(dto)
             if is_alive:
                 # result = self.persist_db(dto)
                 serializer.save()
@@ -120,6 +121,7 @@ class ListenersViewSet(ModelViewSet):
         service = Service.get_service()
         dto = serializer.to_dto()
         try:
+            logger.debug('dto: %r', dto)
             _listener_created = async_to_sync(service.create_listener)(dto)
             serializer.save(listener_internal_id = _listener_created['listener_internal_id'])
         except ResourceExistsError:
@@ -133,9 +135,9 @@ class ListenersViewSet(ModelViewSet):
         service = Service.get_service()
         dto = self.serializer_class.to_dto_from_instance(instance)
         try:
-            import ipdb; ipdb.set_trace()
-            listener_internal_id = async_to_sync(service.delete_listener)(dto)
-            instance.delete()
+            response = async_to_sync(service.delete_listener)(dto)
+            if response.successful_transaction:
+                instance.delete()
         except ValueError as err:
             # Malformed DTO
             logger.error(err)
@@ -178,17 +180,18 @@ class LaunchersViewSet(EnablePartialUpdateMixin, ModelViewSet):
 
     def perform_create(self, serializer):
         service = Service.get_service()
+        # import ipdb; ipdb.set_trace()
         dto = serializer.to_dto()
         try:
             launcher_created_dto = async_to_sync(service.create_launcher_and_retrieve)(dto)
-            logger.error("launcher_created_dto: %r", launcher_created_dto)
+            # logger.error("launcher_created_dto: %r", launcher_created_dto)
             validated_data = serializer.validated_data
             new_launcher = serializer.save(listener=validated_data['listener'],launcher_type=validated_data['launcher_type'],launcher_internal_id = launcher_created_dto['launcher_internal_id'])
             new_launcher.launcher_file.save(launcher_created_dto['payload_name'],ContentFile(launcher_created_dto['payload_content']), save=True)
             # data =  serializer.validated_data 
-        except ValueError:
+        except ValueError as err:
             raise serializers.ValidationError("The c2 was not reachable")
-        except ConnectionError:
+        except ConnectionError as err:
             raise serializers.ValidationError("The c2 was not reachable")
 
     @action(detail=True, methods=['get'])
@@ -239,7 +242,7 @@ class AgentsViewSet(ModelViewSet):
 
     def list(self, request):
         service = Service.get_service()
-        dto = AgentSerializer.to_dto()
+        dto = AgentSerializer.c2_instances_dto()
         try:
             # print(dto)
             agents  = async_to_sync(service.retrieve_agents)(dto)

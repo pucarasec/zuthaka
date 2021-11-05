@@ -92,7 +92,7 @@ class ListenerType(ABC):
         self,
         options: Options,
         dto: RequestDto
-    ) -> ResponseDto':
+    ) -> ResponseDto:
         """
         creates an listener on the corresponding C2 and return a Listener with
         listener_internal_id for the corresponding API inside ResponseDto

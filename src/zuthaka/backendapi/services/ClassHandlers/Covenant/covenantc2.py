@@ -94,7 +94,6 @@ class CovenantC2(C2):
                 raise ConnectionRefusedError(repr(er))
             raise ConnectionError(repr(er))
 
-
     async def retrieve_agents(self, dto: RequestDto) -> bytes:
         try:
             headers = {'Authorization': 'Bearer {}'.format(await self._get_token())}

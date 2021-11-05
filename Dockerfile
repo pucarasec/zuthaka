@@ -26,7 +26,7 @@ RUN pip3 install --no-cache-dir  -r requirements.txt
 
 WORKDIR /Zuthaka/zuthaka
 RUN mkdir Data
-RUN python manage.py runscript reset_loaded_db
+RUN ./reset_db.sh
 RUN python manage.py collectstatic
 
 RUN ln -sf /dev/stdout /Zuthaka/zuthaka/zuthaka.log \

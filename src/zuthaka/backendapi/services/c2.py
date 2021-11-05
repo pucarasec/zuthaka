@@ -188,7 +188,7 @@ class AgentType(ABC):
         pass
 
 
-    async def download_file(self, download_dto: DownloadFileDto, shell_dto: ShellExecuteDto, dto: RequestDto) -> bytes:
+    async def download_file(self, download_dto: DownloadFileDto, dto: RequestDto) -> bytes:
         """
         downloads required file from the target's machine
            raises ValueError in case of invalid dto
@@ -198,7 +198,7 @@ class AgentType(ABC):
         """
         pass
 
-    async def upload_file(self, upload_dto: UploadFileDto, shell_dto: ShellExecuteDto, dto: RequestDto) -> bytes:
+    async def upload_file(self, upload_dto: UploadFileDto, dto: RequestDto) -> bytes:
         """
         uploads required file to the target's machine
            raises ValueError in case of invalid dto
@@ -206,4 +206,4 @@ class AgentType(ABC):
            raises ResourceNotFoundError 
 
         """
-        pass
+        raise NotImplementedError

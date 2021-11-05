@@ -539,7 +539,7 @@ class Service():
         except KeyError as err:
             raise ValueError('Handler not found: {!r}'.format(err))
 
-    async def upload_agents_file(self, dto: Dict[str, Any]) -> Dict[str,Any]:
+    async def upload_agents_file(self, upload_dto: UploadFileDto, dto: RequestDto) -> Dict[str,Any]:
         """
         retrieve  agent's computer file
            raises ValueError in case of invalid dto
@@ -587,7 +587,7 @@ class Service():
             logger.debug('available agent_types in c2 handler: ', agent_types)
             agent_handler = agent_types[_agent_type]
             try:
-                result_dto=  await asyncio.wait_for(agent_handler.upload_file(dto), timeout=5.0)
+                result_dto = await asyncio.wait_for(agent_handler.upload_file(upload_dto, dto), timeout=5.0)
                 response_dto = {}
                 response_dto.update(result_dto or {})
                 return response_dto

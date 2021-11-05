@@ -156,14 +156,14 @@ def dto_encodedfile_to_bytes(dto):
     return content
 
 @sync_to_async
-def field_file_to_dto(field_file, dto):
+def field_file_to_dto(field_file):
     name = field_file.name
     b64_content = '' 
     with field_file.open(mode='rb') as f:
         content = f.read()
         b64_content = base64.b64encode(content)
-    dto.update({'file_name':name, 'file_content': b64_content.decode('utf-8')})
-    return dto
+    # dto.update({'file_name':name, 'file_content': b64_content.decode('utf-8')})
+    return name, b64_content.decode('utf-8')
 
 class AgentWs():
     '''
@@ -201,11 +201,12 @@ class AgentWs():
     async def upload_file(self, transition_file, target_directory):
         # {'type': 'file_manager.upload', 'target_directory':'C:\\some_path', "reference":"77777-aaaaaaaa-1111-33333333"}
         dto = copy(self.agent_dto)
-        dto['target_directory'] = await parse_directory(target_directory, self.agent_model.shell_type)
-        dto = await field_file_to_dto(transition_file, dto)
-        logger.info("dto to execute: %r", dto)
+        target_directory = await parse_directory(target_directory, self.agent_model.shell_type)
+        file_name, file_content = await field_file_to_dto(transition_file)
+        upload_dto = UploadFileDto(target_directory=target_directory,file_name=file_name, file_content=file_content)
+        # logger.info("dto to execute: %r", dto)
         service = Service.get_service()
-        response = await service.upload_agents_file(dto)
+        response = await service.upload_agents_file(upload_dto, dto)
         return response
 
     async def download_file(self, file_path):

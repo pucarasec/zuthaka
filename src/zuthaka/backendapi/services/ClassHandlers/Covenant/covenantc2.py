@@ -2,7 +2,7 @@ from .. import ResourceExistsError, ResourceNotFoundError
 # from . import InconsistencyError
 # from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc, PostExploitationType
 from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc
-from ....dtos import RequestDto, C2Dto, ShellExecuteDto, DownloadFileDto
+from ....dtos import RequestDto, C2Dto, ShellExecuteDto, DownloadFileDto, UploadFileDto
 
 import asyncio
 import random
@@ -398,5 +398,47 @@ class PowershellAgentType(AgentType):
                     command_output = command_response_json['output']
                     response_dto['content'] = command_output
             return response_dto
+        except aiohttp.client_exceptions.ClientConnectorError as err:
+            raise ConnectionError(err)
+
+
+    async def upload_file(self, upload_dto: UploadFileDto, dto: RequestDto) -> bytes:
+        try:
+            headers = {'Authorization': 'Bearer {}'.format(await self._c2._get_token())}
+            target = '{}/api/grunts/{}/interact'.format(
+                self._url, dto.shell_execute.agent_internal_id)
+            interact_post_data = 'Upload /filepath:"{}" /filecontents:"{}"'.format(
+                upload_dto.target_directory + upload_dto.file_name,
+                upload_dto.file_content
+                )
+            logger.debug('interact_post_data: %r', interact_post_data)
+
+            response_dto = {}
+            command_output_id = ''
+            async with self._c2.get_session() as session:
+                async with session.post(target, json=interact_post_data, headers=headers) as response:
+                    command_response_json = await response.json()
+                    command_output_id = command_response_json.get('commandOutputId')
+
+            task_status_target = '{}/api/commands/{}'.format(self._url, command_output_id)
+            for _ in range(40):
+                async with self._c2.get_session() as session:
+                    async with session.get(task_status_target,  headers=headers) as response:
+                        command_response_json = await response.json()
+                        status = command_response_json['gruntTasking']['status']
+                        if status == 'completed':
+                            return
+                        else:
+                            await asyncio.sleep(1)
+            else:
+                raise ConnectionError('unable  to retrieve  task')
+            # command_output_base_url = '{}/api/commandoutputs/{}'.format(self._url, command_output_id)
+            # async with self._c2.get_session() as session:
+            #     async with session.get(command_output_base_url,  headers=headers) as response:
+            #         command_response_json = await response.json()
+            #         logger.debug('command_response_json: %r', command_response_json)
+            #         command_output = command_response_json['output']
+            #         response_dto['content'] = command_output
+            # return response_dto
         except aiohttp.client_exceptions.ClientConnectorError as err:
             raise ConnectionError(err)

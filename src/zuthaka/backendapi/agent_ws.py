@@ -176,10 +176,11 @@ class AgentWs():
 
     async def execute(self, cmd):
         dto = copy(self.agent_dto)
-        dto['command'] = cmd
+        shell_dto = dto.shell_execute
+        # shell_dto.command = cmd
         logger.info("command to execute: %r", cmd)
         service = Service.get_service()
-        response = await service.shell_execute(dto)
+        response = await service.shell_execute(cmd, dto)
         return response
     
     async def shell_execute(self, command):

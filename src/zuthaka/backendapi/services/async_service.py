@@ -246,9 +246,9 @@ class Service():
             listener_ids = c2_instance.listener_ids
             logger.debug('dto: %r', dto)
             logger.debug('listener_ids: %r', listener_ids)
-            listener_internal_ids = list(listener_ids.keys())
+            # listener_internal_ids = list(listener_ids.keys())
             try:
-                logger.debug('c2: ',c2)
+                logger.debug('c2: %r',c2)
                 obtained_agents =  await asyncio.wait_for(current_c2.retrieve_agents(dto), timeout=5.0)
                 logger.debug('obtained_agents: %r',obtained_agents)
                 current_agents = []
@@ -342,24 +342,12 @@ class Service():
             launcher_types = await current_c2.get_launcher_types()
             launcher_handler = launcher_types[launcher_dto.launcher_type]
 
-            # _listener_options = launcher_dto.options
-            # internal_id = launcher_dto.listener_internal_id
             logger.debug('request dto: ', dto)
-            # logger.debug('launcher_types: ', launcher_types)
-            # launcher_handler = launcher_types[_launcher_type]
 
             try:
-                # creation_dto = filter_dict(dto, ['listener_internal_id', 'launcher_options'])
-                # logger.debug('creation_dto: ', creation_dto)
                 downloaded_launcher = await asyncio.wait_for(launcher_handler.create_and_retrieve_launcher(launcher_dto.options, dto), timeout=5.0)
-                # logger.debug(created_launcher)
-
-                # retrieve_dto = filter_dict(dto, ['listener_internal_id', 'launcher_options'])
-                # retrieve_dto['launcher_internal_id'] = created_launcher.get('launcher_internal_id')
-                # downloaded_launcher=  await asyncio.wait_for(launcher_handler.download_launcher(retrieve_dto), timeout=5.0)
 
                 response_dto = {}
-                # response_dto.update(created_launcher)
                 response_dto.update(downloaded_launcher)
                 return response_dto
             except asyncio.TimeoutError:
@@ -436,7 +424,7 @@ class Service():
     #     except KeyError as err:
     #         raise ValueError('Handler not found: {!r}'.format(err))
 
-    async def shell_execute(self, dto: Dict[str, Any]) -> bytes:
+    async def shell_execute(self, command:str, dto: RequestDto) -> bytes:
         """
         executes command  on the  agent's computer
            raises ValueError in case of invalid dto
@@ -465,20 +453,23 @@ class Service():
             }
         """
         try:
-            _c2_type = dto.get('c2_type')
-            current_c2_handler = self._c2types[_c2_type]
-            _c2_options = dto.get('c2_options')
-            current_c2 = current_c2_handler(_c2_options)
+            c2_dto = dto.c2
+            if not c2_dto:
+                raise ValueError('invalid dto missing c2_dto')
+            if not c2_dto.c2_type:
+                raise ValueError('invalid dto missing c2_type')
+            current_c2_handler = self._c2types[c2_dto.c2_type]
+            current_c2 = current_c2_handler(c2_dto.options)
 
-            logger.debug('dto: %r', dto)
-            # logger.debug('launcher_types: ', launcher_types)
-            # _launcher_options = dto.get('listener_options')
-            _agent_type = dto.get('agent_shell_type', 'cmd')
+            logger.debug('received dto: %r', dto)
+
+            shell_dto = dto.shell_execute
+            _agent_type = shell_dto.agent_shell_type
             agent_types = await current_c2.get_agent_types()
-            logger.debug('agent_types: %r', agent_types)
+            logger.debug('available agent_types in c2 handler: ', agent_types)
             agent_handler = agent_types[_agent_type]
             try:
-                shell_result =  await asyncio.wait_for(agent_handler.shell_execute(dto), timeout=20.0)
+                shell_result =  await asyncio.wait_for(agent_handler.shell_execute(command, shell_dto, dto), timeout=20.0)
                 logger.debug(shell_result)
                 response_dto = {}
                 response_dto.update(shell_result)
@@ -579,17 +570,18 @@ class Service():
             }
         """
         try:
-            _c2_type = dto.get('c2_type')
-            current_c2_handler = self._c2types[_c2_type]
-            _c2_options = dto.get('c2_options')
-            current_c2 = current_c2_handler(_c2_options)
+            c2_dto = dto.c2
+            if not c2_dto:
+                raise ValueError('invalid dto missing c2_dto')
+            if not c2_dto.c2_type:
+                raise ValueError('invalid dto missing c2_type')
+            current_c2_handler = self._c2types[c2_dto.c2_type]
+            current_c2 = current_c2_handler(c2_dto.options)
 
             logger.debug('received dto: %r', dto)
-            # logger.debug('launcher_types: ', launcher_types)
-            # _launcher_options = dto.get('listener_options')
 
-            _agent_type = dto.get('agent_shell_type', 'powershell')
-            # _agent_type = 'powershell'
+            shell_dto = dto.shell_execute
+            _agent_type = shell_dto.agent_shell_type
             agent_types = await current_c2.get_agent_types()
             logger.debug('available agent_types in c2 handler: ', agent_types)
             agent_handler = agent_types[_agent_type]

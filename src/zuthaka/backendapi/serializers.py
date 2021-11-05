@@ -17,7 +17,7 @@ from .models import AgentTask
 from .models import AgentTaskEvent
 from django.contrib.auth.models import User
 
-from .dtos import C2Dto, ListenerDto, LauncherDto, RequestDto, C2InstanceDto
+from .dtos import C2Dto, ListenerDto, LauncherDto, RequestDto, C2InstanceDto, ShellExecuteDto
 
 
 # C2
@@ -484,10 +484,10 @@ class AgentSerializer(serializers.ModelSerializer):
             listener_dto = ListenerDto(listener_type= listener_type, options = listener_options, listener_internal_id=listener_internal_id)
 
             agent_internal_id = instance.internal_id
-            agent_shell_type = instance.shell_type
-            shell_dto = ShellExecuteDto(agent_internal_id=agent_internal_id, shell_type=shell_type)
+            shell_type = instance.shell_type
+            shell_dto = ShellExecuteDto(agent_internal_id=agent_internal_id, agent_shell_type=shell_type)
 
-            dto = RequestDto(c2= c2_dto, listener= listener, shell_execute=shell_dto)
+            dto = RequestDto(c2= c2_dto, listener= listener_dto, shell_execute=shell_dto)
 
             # _c2 = C2.objects.get(pk=instance.c2_id)
             # dto['c2_type'] = _c2.c2_type.name

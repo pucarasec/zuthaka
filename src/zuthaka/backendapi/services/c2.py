@@ -177,7 +177,7 @@ class LauncherType(ABC):
 
 class AgentType(ABC):
 
-    async def shell_execute(self, shell_dto: ShellExecuteDto, dto: RequestDto) -> bytes:
+    async def shell_execute(self, command: str, shell_dto: ShellExecuteDto, dto: RequestDto) -> bytes:
         """
         executes a command string on the 
            raises ValueError in case of invalid dto

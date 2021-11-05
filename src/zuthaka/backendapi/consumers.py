@@ -150,7 +150,6 @@ class AgentConsumer(AsyncJsonWebsocketConsumer):
     host = "0.0.0.0"
 
     async def connect(self):
-        logger.debug("scope: %r", self.scope)
         if not self.scope['user'].is_authenticated:
             await self.close(code=403)
 

@@ -20,7 +20,6 @@ def async_save_payload(name, payload):
     sync_to_async(sync_save_payload)(name, payload)
 
 
-# pylint: disable=inherit-non-class
 class OptionDesc(NamedTuple):
     name: str = ''
     example: str = ''
@@ -42,7 +41,6 @@ class C2(ABC):
     
     @classmethod
     def validate_options(cls, options: Options) -> bool:
-        # logger.debug('options: %s', options)
         for option in cls.registered_options:
             if option.name not in options:
                 logger.debug('option missing: %r', option)
@@ -70,43 +68,18 @@ class C2(ABC):
     @abstractmethod
     async def is_alive(self, request_dto: RequestDto) -> ResponseDto:
         """
-            tries to connect to the corresponding c2 and returns bool
+            tries to connect to the corresponding c2 and returns ResponseDto with successful_transaction in case fo success
             raises ConectionError in case of not be able to connect to c2 instance
             raises ConnectionRefusedError in case of not be able to authenticate
         """
         pass
 
     @abstractmethod
-    # async def retrieve_agents(self, listener_internal_ids: List[int], c2_dto: C2Dto, dto: RequestDto) -> bytes:
     async def retrieve_agents(self, dto: RequestDto) -> ResponseDto:
         """
             retrives all available Agents on the  given C2
                raises ValueError in case of invalid dto
                raises ConectionError in case of not be able to connect to c2 instance
-               raises ResourceNotFoundError 
-
-            [*] EXAMPLES 
-
-            dto = {
-                'c2_type' :'EmpireC2Type',
-                'c2_options': {
-                        "url": "https://127.0.0.1:7443",
-                        "username": "cobbr",
-                        "password": "NewPassword!"
-                    },
-                  'listeners_internal_ids' : ['1','2','3'] 
-                  }
-
-            response_dto = {'agents': [{
-                'last_connection' : '',
-                'first_connection' : '',
-                'hostname' : '',
-                'username' : '',
-                'internal_id' : ''
-                'agent_shell_type' : ''
-                'listener_internal_id' : ''
-                }, ]
-                }
         """
         pass
 
@@ -119,31 +92,14 @@ class ListenerType(ABC):
         self,
         options: Options,
         dto: RequestDto
-    ) -> 'Listener':
+    ) -> ResponseDto':
         """
         creates an listener on the corresponding C2 and return a Listener with
-        listener_internal_id for the corresponding API
+        listener_internal_id for the corresponding API inside ResponseDto
 
            raises ValueError in case of invalid dto
            raises ConectionError in case of not be able to connect to c2 instance
            raises ResourceExistsError in case of not be able to create the objectdue it already exists
-
-        [*] EXAMPLES 
-
-        dto = {
-            'c2_type' :'EmpireC2Type',
-            'c2_options': {
-                    "url": "https://127.0.0.1:7443",
-                    "username": "cobbr",
-                    "password": "NewPassword!"
-                },
-              'listener_type' :'HTTPEmpire',
-              'listener_options' : {
-                    "interface": "192.168.0.1",
-                    "port": "139",
-                    "default_delay": "10",
-                }
-            }
         """
         pass
 
@@ -153,10 +109,11 @@ class ListenerType(ABC):
         internal_id: str,
         options: Options,
         dto: RequestDto
-    ) -> None:
+    ) -> ResponseDto:
 
         """
         removes a listener from a corresponding c2 instance
+        returns ResponseDto with successful_transaction in case fo success
 
            raises ValueError in case of invalid dto
            raises ConectionError in case of not be able to connect to c2 instance
@@ -181,7 +138,7 @@ class AgentType(ABC):
 
     async def shell_execute(self, command: str, shell_dto: ShellExecuteDto, dto: RequestDto) -> bytes:
         """
-        executes a command string on the 
+        executes a command string on the target's machine
            raises ValueError in case of invalid dto
            raises ConectionError in case of not be able to connect to c2 instance
            raises ResourceNotFoundError 

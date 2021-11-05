@@ -1,6 +1,4 @@
 from .. import ResourceExistsError, ResourceNotFoundError
-# from . import InconsistencyError
-# from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc, PostExploitationType
 from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc
 from ....dtos import AgentDto, CreateListenerDto, RequestDto, ResponseDto, ShellExecuteDto, DownloadFileDto, UploadFileDto
 from ....dtos import CreateLauncherDto
@@ -8,7 +6,7 @@ from ....dtos import CreateLauncherDto
 import asyncio
 import random
 import string
-from typing import Iterable, Optional, Dict, Any, IO
+from typing import  Optional, Dict
 import aiohttp
 import logging
 logger = logging.getLogger(__name__)

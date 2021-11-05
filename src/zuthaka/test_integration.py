@@ -48,6 +48,7 @@ async def test_is_alive_invalid_c2():
         dto = RequestDto(c2=invalid_c2_dto)
         await class_handler.is_alive(dto)
 
+
 @pytest.mark.asyncio
 async def test_is_alive_false_creds():
     with pytest.raises(ConnectionRefusedError) as err:

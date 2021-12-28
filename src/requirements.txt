@@ -12,3 +12,4 @@ django_extensions
 aiohttp
 pytest-asyncio
 django-staticfiles
+websockets

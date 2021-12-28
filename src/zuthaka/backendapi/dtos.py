@@ -55,11 +55,11 @@ class RequestDto(NamedTuple):
 # responses
 class CreateListenerDto(NamedTuple):
     listener_internal_id: str
-    listener_options: dict[str, Any]
+    listener_options: Dict[str, Any]
 
 
 class CreateLauncherDto(NamedTuple):
-    launcher_options: dict[str, Any]
+    launcher_options: Dict[str, Any]
     payload_content: str  # encoded b64
     payload_name: str
     launcher_internal_id: str = ""

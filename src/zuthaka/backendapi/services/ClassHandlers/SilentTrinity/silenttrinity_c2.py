@@ -30,6 +30,7 @@ import ssl
 from urllib.parse import urlparse
 import logging
 
+logger = logging.getLogger(__name__)
 
 
 class SilentTriC2(C2):
@@ -63,19 +64,19 @@ class SilentTriC2(C2):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._token: Optional[str] = None
-        self._listener_types = {
-            SilentTriHTTPListenerType.name: SilentTriHTTPListenerType(
-                self.options['url'],
-                self
-            ),
-        }
-        self._launcher_types = {
-            SilentTriPowershellLauncherType.name: SilentTriPowershellLauncherType(self.options['url'], self),
-        }
+        # self._listener_types = {
+        #     SilentTriHTTPListenerType.name: SilentTriHTTPListenerType(
+        #         self.options['url'],
+        #         self
+        #     ),
+        # }
+        # self._launcher_types = {
+        #     SilentTriPowershellLauncherType.name: SilentTriPowershellLauncherType(self.options['url'], self),
+        # }
 
-        self._agent_types = {
-            'powershell': PowershellAgentType(self.options['url'], self),
-        }
+        # self._agent_types = {
+        #     'powershell': PowershellAgentType(self.options['url'], self),
+        # }
 
     def get_session(self) -> aiohttp.ClientSession:
         return aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False))
@@ -98,11 +99,14 @@ class SilentTriC2(C2):
             raises ConectionError in case of not be able to connect to c2 instance
             raises ConnectionRefusedError in case of not be able to authenticate
         """
-        username = RequestDto.c2.options.get('username')
-        password = RequestDto.c2.options.get('password')
-        teamserver_url = RequestDto.c2.options.get('teamserver_url')
+        username = requestDto.c2.options.get('username')
+        password = requestDto.c2.options.get('password')
+        teamserver_url = requestDto.c2.options.get('teamserver_url')
 
-        head = sync_to_async(generate_auth_header)(username, password)
+        logger.error("teamserver_url : %r", teamserver_url)
+        # head = await sync_to_async(self.generate_auth_header)(username, password)
+        head = self.generate_auth_header(username, password)
+        logger.error("head : %r", head)
 
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         ssl_context.check_hostname = False
@@ -111,20 +115,20 @@ class SilentTriC2(C2):
         URL = urlparse(teamserver_url)
         url = f"{URL.scheme}://{URL.hostname}:{URL.port}"
 
+        print('TEST!!!')
+        logger.error("test2")
+
         async with websockets.connect(
             url, 
-            extra_headers=generate_auth_header(
-                username,
-                password
-            ), 
+            extra_headers=head, 
             ssl=ssl_context, 
             ping_interval=None, # We disable the built-in ping/heartbeat mechanism and use our own
             ping_timeout=None
         ) as ws:
 
-            logging.info(f'Connected to {url}')
+            logger.error(f'Connected to {url}')
             self.ws = ws
-            return True
+            return ResponseDto(successful_transaction=True)
 
     async def retrieve_agents(self, dto: RequestDto) -> ResponseDto:
         """

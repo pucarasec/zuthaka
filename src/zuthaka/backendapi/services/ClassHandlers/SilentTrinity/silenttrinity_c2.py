@@ -7,7 +7,6 @@ import asyncio
 import random
 import string
 from typing import Optional, Dict
-import aiohttp
 import logging
 
 logger = logging.getLogger(__name__)
@@ -32,6 +31,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
+def gen_random_string(length: int = 10):
+    return ''.join([random.choice(string.ascii_letters + string.digits) for n in range(length)])
+
+async def recv_(ws):
+    response = await ws.recv()
+    logging.info("Response: %r", repr(response))
 
 class SilentTriC2(C2):
     name = 'Silent Trinity'
@@ -78,16 +84,6 @@ class SilentTriC2(C2):
         #     'powershell': PowershellAgentType(self.options['url'], self),
         # }
 
-    def get_session(self) -> aiohttp.ClientSession:
-        return aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False))
-
-    async def _get_token(self) -> str:
-        """
-        Authenticate the service to the corresponding SilentTri
-        Should we add an time expire or check to avoid generating it everytime?
-        """
-        pass
-
     def generate_auth_header(self, username, password):
         client_digest = hmac.new(password.encode(), msg=b'silenttrinity', digestmod=sha512).hexdigest()
         header_value = b64encode(f"{username}:{client_digest}".encode()).decode()
@@ -103,10 +99,9 @@ class SilentTriC2(C2):
         password = requestDto.c2.options.get('password')
         teamserver_url = requestDto.c2.options.get('teamserver_url')
 
-        logger.error("teamserver_url : %r", teamserver_url)
         # head = await sync_to_async(self.generate_auth_header)(username, password)
         head = self.generate_auth_header(username, password)
-        logger.error("head : %r", head)
+        logger.debug("head : %r", head)
 
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         ssl_context.check_hostname = False
@@ -114,9 +109,6 @@ class SilentTriC2(C2):
 
         URL = urlparse(teamserver_url)
         url = f"{URL.scheme}://{URL.hostname}:{URL.port}"
-
-        print('TEST!!!')
-        logger.error("test2")
 
         async with websockets.connect(
             url, 
@@ -158,7 +150,7 @@ class SilentTriHTTPListenerType(ListenerType):
             required=True
         ),
         OptionDesc(
-            name='bindAdress',
+            name='bindAdress'
             description='interfaces to which the listener is bind',
             example='0.0.0.0',
             field_type='string',
@@ -171,7 +163,28 @@ class SilentTriHTTPListenerType(ListenerType):
         self._c2 = _c2
 
     async def create_listener(self, options: Options, dto: RequestDto) -> Dict:
-        raise NotImplementedError
+        ws = self._c2.ws
+        await recv_(ws)
+        await recv_(ws)
+        set_listeners = {"id": "SeI6WD3JP5", "ctx": "listeners", "cmd": "get_selected", "args": {}, "data": {}}
+        await ws.send(json.dumps(set_listeners))
+        await recv_(ws)
+
+        set_https = {"id": "uxQO9VK04w", "ctx": "listeners", "cmd": "use", "args": {"name": "https"}, "data": {}}
+        await ws.send(json.dumps(set_https))
+        await recv_(ws)
+
+        set_port = {"id": "RX9o7Z6qQN", "ctx": "listeners", "cmd": "set", "args": {"name": "Port", "value": "9988"}, "data": {}}
+        await ws.send(json.dumps(set_port))
+        await recv_(ws)
+
+        set_iface = {"id": "OsxgyZcfSX", "ctx": "listeners", "cmd": "set", "args": {"name": "BindIP", "value": "127.0.0.1"}, "data": {}}
+        await ws.send(json.dumps(set_iface))
+        await recv_(ws)
+
+        set_start = {"id": "5atzrUrEXj", "ctx": "listeners", "cmd": "start", "args": {}, "data": {}}
+        await ws.send(json.dumps(set_start))
+        await recv_(ws)
 
     async def delete_listener(
         self,

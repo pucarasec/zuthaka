@@ -218,7 +218,22 @@ class SilentTriPowershellLauncherType(LauncherType):
            raises ValueError in case of invalid dto
            raises ConectionError in case of not be able to connect to c2 instance
         """
-        raise NotImplementedError
+        # ---> {"id": "xOUvWeyOk3", "ctx": "stagers", "cmd": "get_selected", "args": {}, "data": {}}
+        # <--- {"type": "message", "id": "xOUvWeyOk3", "ctx": "stagers", "name": "get_selected", "status": "success", "result": {"name": "wmic", "description": "Stage via wmic XSL execution", "author": "@byt3bl33d3r", "options": {}}}
+
+        # ---> {"id": "GSdJMyul3K", "ctx": "stagers", "cmd": "use", "args": {"name": "powershell_stageless"}, "data": {}}
+        # <--- {"type": "message", "id": "GSdJMyul3K", "ctx": "stagers", "name": "use", "status": "success", "result": {"name": "powershell_stageless", "description": "Embeds the BooLang Compiler within PowerShell and directly executes STs stager", "author": "@byt3bl33d3r", "options": {"AsFunction": {"Description": "Generate stager as a PowerShell function", "Required": false, "Value": true}}}}
+
+
+        # ---> {"id": "4hM4EksY4b", "ctx": "stagers", "cmd": "generate", "args": {"listener_name": "https"}, "data": {}}                                                                                             
+        # <--- {"type": "message", "id": "4hM4EksY4b", "ctx": "stagers", "name": "generate", "status": "success", "result": {"output": "function Invoke-L..... ", "suggestions": "", "extension": "ps1"}}
+
+
+        await recv_(ws)
+        await recv_(ws)
+        set_listeners = {"id": "SeI6WD3JP5", "ctx": "listeners", "cmd": "get_selected", "args": {}, "data": {}}
+        await ws.send(json.dumps(set_listeners))
+        await recv_(ws)
 
 class PowershellAgentType(AgentType):
     agent_shell_type = 'powershell'

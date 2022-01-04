@@ -8,6 +8,7 @@ import random
 import string
 from typing import Optional, Dict
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -140,6 +141,7 @@ class SilentTriC2(C2):
         await ws.send(json.dumps(cmd_list))
         response = await recv_(ws)
         agents = response['results']
+        agents = []
         for agent_id in agents:
             _agent = AgentDto(
                 internal_id=agent_id,
@@ -149,31 +151,28 @@ class SilentTriC2(C2):
                 agent_shell_type='powershell',
                 username='criso'
             )
-        dto = ResponseDto()
+            agents.append(_agent)
+        dto = ResponseDto(
+            agents=agents,
+            successful_transaction=True,
+        )
         return dto
 
 
 
 class SilentTriHTTPListenerType(ListenerType):
-    name = 'http-profile'
+    name = 'https-profile'
     description = 'standard http listener, messages are delivered in enconded comment'
     registered_options = [
         OptionDesc(
-            name='connectAddresses',
-            description='address to which the agent is going to try to connect',
-            example='192.168.0.14',
-            field_type='string',
-            required=True
-        ),
-        OptionDesc(
-            name='connectPort',
+            name='bindPort',
             description='port to which the agent is going to try to connect',
             example=80,
             field_type='integer',
             required=True
         ),
         OptionDesc(
-            name='bindAdress'
+            name='bindIp'
             description='interfaces to which the listener is bind',
             example='0.0.0.0',
             field_type='string',
@@ -186,6 +185,8 @@ class SilentTriHTTPListenerType(ListenerType):
         self._c2 = _c2
 
     async def create_listener(self, options: Options, dto: RequestDto) -> Dict:
+        _bindPort = options.get('bindPort', 8080)
+        _bindIp = options.get('bindIp','0.0.0.0')
         ws = self._c2.ws
         await recv_(ws)
         await recv_(ws)
@@ -197,17 +198,18 @@ class SilentTriHTTPListenerType(ListenerType):
         await ws.send(json.dumps(set_https))
         await recv_(ws)
 
-        set_port = {"id": "RX9o7Z6qQN", "ctx": "listeners", "cmd": "set", "args": {"name": "Port", "value": "9988"}, "data": {}}
+        set_port = {"id": "RX9o7Z6qQN", "ctx": "listeners", "cmd": "set", "args": {"name": "Port", "value": str(_bindPort)}, "data": {}}
         await ws.send(json.dumps(set_port))
         await recv_(ws)
 
-        set_iface = {"id": "OsxgyZcfSX", "ctx": "listeners", "cmd": "set", "args": {"name": "BindIP", "value": "127.0.0.1"}, "data": {}}
+        set_iface = {"id": "OsxgyZcfSX", "ctx": "listeners", "cmd": "set", "args": {"name": "BindIP", "value": _bindIp}, "data": {}}
         await ws.send(json.dumps(set_iface))
         await recv_(ws)
 
         set_start = {"id": "5atzrUrEXj", "ctx": "listeners", "cmd": "start", "args": {}, "data": {}}
         await ws.send(json.dumps(set_start))
         await recv_(ws)
+        return ResponseDto(successful_transaction=True)
 
     async def delete_listener(
         self,

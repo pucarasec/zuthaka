@@ -313,7 +313,10 @@ class PowershellAgentType(AgentType):
 
         set_ctx = {"id": "tfwCJrSKZf", "ctx": "modules", "cmd": "run", "args": {"guids": ["b0c71f5e-660b-4f93-b722-9df523b4b063"]}, "data": {}}
         await ws.send(json.dumps(set_ctx))
-        await recv_(ws)
+        response = await recv_(ws)
+        result = response['result']
+        response_dto = {'content': result['output']}
+        return response_dto
 
     async def download_file(self, download_dto: DownloadFileDto, dto: RequestDto) -> bytes:
         """

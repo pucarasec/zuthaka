@@ -208,17 +208,21 @@ class SilentTriHTTPListenerType(ListenerType):
         await recv_(ws)
 
         set_start = {"id": gen_random_string(), "ctx": "listeners", "cmd": "start", "args": {}, "data": {}}
+
+        # ---> {"id": "PqFOfFolzu", "ctx": "listeners", "cmd": "start", "args": {}, "data": {}}
+        # <--- {"type": "message", "id": "PqFOfFolzu", "ctx": "listeners", "name": "start", "status": "success", "result": {"name": "https", "author": "@byt3bl33d3r", "description": "HTTPS listener", "running": true, "options": {"Name": {"Description": "Name for the listener.", "Required": true, "Value": "https"}, "BindIP": {"Description": "The IPv4/IPv6 address to bind to.", "Required": true, "Value": "127.0.0.1"}, "Port": {"Description": "Port for the listener.", "Required": true, "Value": "4455"}, "Cert": {"Description": "SSL Certificate file", "Required": false, "Value": "~/.st/cert.pem"}, "Key": {"Description": "SSL Key file", "Required": false, "Value": "~/.st/key.pem"}, "RegenCert": {"Description": "Regenerate TLS cert", "Required": false, "Value": false}, "CallBackURls": {"Description": "Additional C2 Callback URLs (comma seperated)", "Required": false, "Value": ""}, "Comms": {"Description": "C2 Comms to use", "Required": true, "Value": "https"}}}}
+        # <--- {"type": "event", "name": "STATS_UPDATE", "data": {"listeners": {"https": {"name": "https", "author": "@byt3bl33d3r", "description": "HTTPS listener", "running": true, "options": {"Name": {"Description": "Name for the listener.", "Required": true, "Value": "https"}, "BindIP": {"Description": "The IPv4/IPv6 address to bind to.", "Required": true, "Value": "127.0.0.1"}, "Port": {"Description": "Port for the listener.", "Required": true, "Value": "4455"}, "Cert": {"Description": "SSL Certificate file", "Required": false, "Value": "~/.st/cert.pem"}, "Key": {"Description": "SSL Key file", "Required": false, "Value": "~/.st/key.pem"}, "RegenCert": {"Description": "Regenerate TLS cert", "Required": false, "Value": false}, "CallBackURls": {"Description": "Additional C2 Callback URLs (comma seperated)", "Required": false, "Value": ""}, "Comms": {"Description": "C2 Comms to use", "Required": true, "Value": "https"}}}}, "sessions": {"b0c71f5e-660b-4f93-b722-9df523b4b063": {"guid": "b0c71f5e-660b-4f93-b722-9df523b4b063", "alias": "b0c71f5e-660b-4f93-b722-9df523b4b063", "address": "192.168.0.117", "info": {"OsReleaseId": "2009", "Jobs": 1, "Sleep": 5000, "Guid": "b0c71f5e-660b-4f93-b722-9df523b4b063", "ProcessId": 7236, "Os": "Microsoft Windows 10 Home 10.0.19043.0", "DotNetVersion": "4.0.30319.42000", "Hostname": "DESKTOP-2LD29PJ", "MinJitter": 0, "HighIntegrity": false, "Debug": true, "MaxJitter": 0, "ProcessName": "powershell", "NetworkAddresses": ["192.168.0.117", "169.254.51.246"], "Domain": "DESKTOP-2LD29PJ", "OsArch": "x64", "Username": "criso", "C2Channels": ["https"], "CallBackUrls": [["https://192.168.0.173:8899"]]}, "lastcheckin": 23195.3134829998}}, "modules": {"loaded": 78}, "stagers": {"loaded": 9}, "users": {"pucara": {"name": "pucara", "ip": "127.0.0.1", "port": 46398}}, "ips": ["192.168.0.173"]}}
+
         await ws.send(json.dumps(set_start))
         response = await recv_(ws)
         result = response.get('result')
 
-        launcher = CreateLauncherDto(
-            payload_content=result['output'],
-            payload_name='st_stageless.' + result['extension']
+        launcher = CreateListenerDto(
+            listener_internal_id=result['name'],
             )
         dto = ResponseDto(
             successful_transaction=True,
-            created_launcher=launcher
+            created_listener=listener
         )
         return dto
 

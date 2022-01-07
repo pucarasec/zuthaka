@@ -69,6 +69,7 @@ class ConnectionHandler():
             ping_timeout=None
         )
         logger.error('self.ws: %r', self.ws)
+        await  self.ws.recv()
         return True
         # async with websockets.connect(
         #     url, 
@@ -272,13 +273,12 @@ class SilentTriHTTPListenerType(ListenerType):
 
         await connection.send(set_start)
         # await ws.send(json.dumps(set_start))
-        await  connection.recv()
         # logger.error('response1: %r',response1)
 
         # response = await  connection.recv()
         # logger.error('-->response: %r',response)
-
         await  connection.recv()
+
         # logger.error('response2: %r',response2)
 
         response = await  connection.recv()
@@ -350,7 +350,8 @@ class SilentTriPowershellLauncherType(LauncherType):
         await connection.send(set_powershell_stagless)
         await connection.recv()
 
-        listener_name = RequestDto.listener.listener_internal_id
+        # logger.error('RequestDto.listener: %r ', RequestDto)
+        listener_name = dto.listener.listener_internal_id
         set_generate = {"id": gen_random_string(), "ctx": "stagers", "cmd": "generate", "args": {"listener_name": listener_name}, "data": {}}
         await connection.send(set_generate)
         response = await connection.recv()

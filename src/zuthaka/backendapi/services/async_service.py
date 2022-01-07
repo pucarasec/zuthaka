@@ -125,6 +125,7 @@ class Service():
             if not c2_dto.c2_type:
                 raise ValueError('invalid dto missing c2_type, test')
             current_c2_handler = self._c2types[c2_dto.c2_type]
+
             current_c2 = current_c2_handler(c2_dto.options)
 
             launcher_dto = dto.listener
@@ -315,7 +316,7 @@ class Service():
             launcher_types = await current_c2.get_launcher_types()
             launcher_handler = launcher_types[launcher_dto.launcher_type]
 
-            logger.debug('request dto: ', dto)
+            logger.debug('request dto: %r ', dto)
 
             try:
                 response = await asyncio.wait_for(launcher_handler.create_and_retrieve_launcher(launcher_dto.options, dto), timeout=5.0)

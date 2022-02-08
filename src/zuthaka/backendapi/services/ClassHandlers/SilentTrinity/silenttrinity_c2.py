@@ -303,7 +303,29 @@ class SilentTriHTTPListenerType(ListenerType):
         options: Options,
         dto: RequestDto
     ) -> None:
-        raise NotImplementedError
+        # Review
+        listener_internal_id = RequestDto.listener.listener_internal_id
+        connection = self._c2.connection
+
+        set_listeners = {"id": gen_random_string(), "ctx": "listeners", "cmd": "get_selected", "args": {}, "data": {}}
+        await connection.send(set_listeners)
+        await connection.recv()
+
+        stop_listener = {"id": gen_random_string(), "ctx": "listeners", "cmd": "stop", "args": {"name": listener_internal_id}, "data": {}}
+        await connection.send(stop_listener)
+
+        # logger.error('-->response: %r',response)
+
+        response = await  connection.recv()
+        logger.error('response: %r',response)
+
+        # result = response.get('result')
+
+        dto = ResponseDto(
+            successful_transaction=True,
+
+        )
+        return dto
 
 
 class SilentTriPowershellLauncherType(LauncherType):

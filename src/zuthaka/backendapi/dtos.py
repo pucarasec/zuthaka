@@ -10,8 +10,8 @@ class C2Dto(NamedTuple):
 
 class ListenerDto(NamedTuple):
     listener_type: str
-    listener_id: str = ''
-    listener_internal_id: str = ''
+    listener_id: str = ""
+    listener_internal_id: str = ""
     options: Dict[str, Any] = {}
 
 
@@ -68,12 +68,12 @@ class CreateLauncherDto(NamedTuple):
 class AgentDto(NamedTuple):
     last_connection: date
     first_connection: date
-    internal_id:  str
+    internal_id: str
     active: bool
-    listener_internal_id:  str
-    hostname: str = ''
-    username: str = ''
-    agent_shell_type: str = ''
+    listener_internal_id: str
+    hostname: str = ""
+    username: str = ""
+    agent_shell_type: str = ""
     # c2_id:  str
 
 

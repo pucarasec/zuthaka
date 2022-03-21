@@ -7,7 +7,7 @@ import uuid
 class C2Type(models.Model):
     documentation = models.CharField(max_length=250, blank=True)
     name = models.CharField(max_length=250)
-    description = models.CharField(max_length=250,  blank=True)
+    description = models.CharField(max_length=250, blank=True)
     module_name = models.CharField(max_length=250)
     module_path = models.CharField(max_length=250)
 
@@ -17,7 +17,8 @@ class C2Type(models.Model):
 
 class C2TypeOption(models.Model):
     c2_type = models.ForeignKey(
-        C2Type, related_name='options', on_delete=models.CASCADE)
+        C2Type, related_name="options", on_delete=models.CASCADE
+    )
     name = models.CharField(max_length=250)
     example = models.CharField(max_length=250, blank=True, null=True)
     description = models.CharField(max_length=250, blank=True, null=True)
@@ -33,14 +34,13 @@ class C2(models.Model):
     creation_date = models.DateTimeField(default=datetime.datetime.now)
 
     def __str__(self):
-        return 'C2 type:{}'.format(self.c2_type)
+        return "C2 type:{}".format(self.c2_type)
 
 
 class C2Option(models.Model):
     name = models.CharField(max_length=60)
     value = models.CharField(max_length=60)
-    c2 = models.ForeignKey(C2, related_name='options',
-                           on_delete=models.CASCADE)
+    c2 = models.ForeignKey(C2, related_name="options", on_delete=models.CASCADE)
 
     def __str__(self):
         return self.name
@@ -48,7 +48,7 @@ class C2Option(models.Model):
 
 class ListenerType(models.Model):
     name = models.CharField(max_length=250)
-    description = models.CharField(max_length=250,  blank=True, null=True)
+    description = models.CharField(max_length=250, blank=True, null=True)
     c2_type = models.ForeignKey(C2Type, on_delete=models.CASCADE)
 
     def __str__(self):
@@ -57,7 +57,8 @@ class ListenerType(models.Model):
 
 class ListenerTypeOption(models.Model):
     listener_type = models.ForeignKey(
-        ListenerType, related_name='options', on_delete=models.CASCADE)
+        ListenerType, related_name="options", on_delete=models.CASCADE
+    )
     name = models.CharField(max_length=250)
     example = models.CharField(max_length=250, blank=True, null=True)
     description = models.CharField(max_length=250, blank=True, null=True)
@@ -82,7 +83,8 @@ class ListenerOption(models.Model):
     name = models.CharField(max_length=60)
     value = models.CharField(max_length=60)
     listener = models.ForeignKey(
-        Listener, related_name='options', on_delete=models.CASCADE)
+        Listener, related_name="options", on_delete=models.CASCADE
+    )
 
     def __str__(self):
         return self.name
@@ -90,7 +92,7 @@ class ListenerOption(models.Model):
 
 class LauncherType(models.Model):
     name = models.CharField(max_length=250)
-    description = models.CharField(max_length=250,  blank=True, null=True)
+    description = models.CharField(max_length=250, blank=True, null=True)
     c2_type = models.ForeignKey(C2Type, on_delete=models.CASCADE)
 
     def __str__(self):
@@ -99,7 +101,8 @@ class LauncherType(models.Model):
 
 class LauncherTypeOption(models.Model):
     launcher_type = models.ForeignKey(
-        LauncherType, related_name='options', on_delete=models.CASCADE)
+        LauncherType, related_name="options", on_delete=models.CASCADE
+    )
     name = models.CharField(max_length=250)
     example = models.CharField(max_length=250, blank=True, null=True)
     description = models.CharField(max_length=250, blank=True, null=True)
@@ -115,18 +118,18 @@ class Launcher(models.Model):
     listener = models.ForeignKey(Listener, on_delete=models.CASCADE)
     launcher_type = models.ForeignKey(LauncherType, on_delete=models.CASCADE)
     launcher_internal_id = models.CharField(max_length=250, blank=True, null=True)
-    launcher_file = models.FileField(
-        upload_to='payloads')
+    launcher_file = models.FileField(upload_to="payloads")
 
     def __str__(self):
-        return 'pk: {}'.format(self.pk)
+        return "pk: {}".format(self.pk)
 
 
 class LauncherOption(models.Model):
     name = models.CharField(max_length=60)
     value = models.CharField(max_length=60)
     launcher = models.ForeignKey(
-        Launcher, related_name='options', on_delete=models.CASCADE)
+        Launcher, related_name="options", on_delete=models.CASCADE
+    )
 
     def __str__(self):
         return self.name
@@ -147,28 +150,31 @@ class Agent(models.Model):
 class AgentTask(models.Model):
     creation_date = models.DateTimeField(default=datetime.datetime.now)
     command_ref = models.CharField(
-        max_length=100, blank=True, unique=True, default=uuid.uuid4)
+        max_length=100, blank=True, unique=True, default=uuid.uuid4
+    )
     completed = models.BooleanField(default=False)
     upload = models.BooleanField(default=False)
     transition_file = models.FileField(blank=True, null=True)
 
 
 class AgentTaskEvent(models.Model):
-    task = models.ForeignKey(AgentTask, related_name='events', on_delete=models.CASCADE)
+    task = models.ForeignKey(AgentTask, related_name="events", on_delete=models.CASCADE)
     interaction_date = models.DateTimeField(default=datetime.datetime.now)
     content = models.JSONField(blank=True, null=True)
     transition_file = models.FileField(blank=True, null=True)
 
+
 class Project(models.Model):
     name = models.CharField(max_length=250)
-    description = models.CharField(max_length=250,  blank=True, null=True)
+    description = models.CharField(max_length=250, blank=True, null=True)
     creation_date = models.DateTimeField(default=datetime.datetime.now)
     update_date = models.DateTimeField(default=datetime.datetime.now)
     documentation = models.CharField(
-        max_length=250, blank=True, null=True)  # This may need to be a file
-    admins = models.ManyToManyField(User, related_name='admins')
-    operators = models.ManyToManyField(User, related_name='operators')
-    viewers = models.ManyToManyField(User, related_name='viewers')
+        max_length=250, blank=True, null=True
+    )  # This may need to be a file
+    admins = models.ManyToManyField(User, related_name="admins")
+    operators = models.ManyToManyField(User, related_name="operators")
+    viewers = models.ManyToManyField(User, related_name="viewers")
 
     def __str__(self):
         return self.name

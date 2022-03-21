@@ -13,7 +13,7 @@ from . import models
 from .agent_ws import AgentWs
 
 logger = logging.getLogger(__name__)
-'''
+"""
  # Types of events:
 
 
@@ -73,17 +73,20 @@ logger = logging.getLogger(__name__)
     RECEIVE
        - : {'type': 'post_explotation.available.result', 'content':[{'name':'mimikatz_dump', 'c2_id':1, 'type':'windows/powershell', 'description':'dumps passowrds in memory', 'documentation':'/link', 'options': ', 'id_modulo': 999 }]
        - : {'type': 'post_explotation.result', 'content':"string", 'content_url' :'https://'} 
-'''
+"""
+
 
 @sync_to_async
 def get_task(reference):
     task = models.AgentTask.objects.get(command_ref=reference)
     return task
 
+
 @sync_to_async
 def create_task():
     task = models.AgentTaskEvent.objects.create()
     return task
+
 
 @sync_to_async
 def get_task_file(task):
@@ -91,10 +94,12 @@ def get_task_file(task):
     task_event = models.AgentTaskEvent.objects.get(task=task.pk)
     return task_event.transition_file
 
+
 @sync_to_async
 def complete_task(task):
     task.completed = True
     task.save()
+
 
 @sync_to_async
 def persist_transition_file(task, file_path, content):
@@ -104,44 +109,64 @@ def persist_transition_file(task, file_path, content):
     task.completed = True
     task.save()
 
+
 @sync_to_async
 def save_task_event(result):
     task.completed = True
     task.save()
+
 
 @sync_to_async
 def task_new():
     new_task = models.AgentTask.objects.create()
     return new_task
 
+
 def require_task(func):
     async def task_tracking(*args):
         logger.info("task_tracking args:%r", args)
         try:
-            reference = args[1].pop('reference')
+            reference = args[1].pop("reference")
             logger.debug("task reference:%r", reference)
             task = await get_task(reference)
             if not task.completed:
                 logger.debug("func: %r", func)
                 await func(*args, task)
             else:
-                await args[0].send_json({'type': 'error',
-                                         'content': 'Task already finalized. Task with reference {},\
-                                          has already ended, please generate a new task'.format(args[1].get('reference'))})
+                await args[0].send_json(
+                    {
+                        "type": "error",
+                        "content": "Task already finalized. Task with reference {},\
+                                          has already ended, please generate a new task".format(
+                            args[1].get("reference")
+                        ),
+                    }
+                )
         except ObjectDoesNotExist:
-            await args[0].send_json({'type': 'error',
-                                     'content': 'Invalid reference. No task has been registered with\
-                                      reference {}'.format(args[1].get('reference'))})
+            await args[0].send_json(
+                {
+                    "type": "error",
+                    "content": "Invalid reference. No task has been registered with\
+                                      reference {}".format(
+                        args[1].get("reference")
+                    ),
+                }
+            )
         except KeyError as err:
             # logger.exception("error: %r", err)
-            await args[0].send_json({'type': 'error', 'content': 'invalid event, task reference needed'})
+            await args[0].send_json(
+                {"type": "error", "content": "invalid event, task reference needed"}
+            )
+
     return task_tracking
+
 
 @sync_to_async
 def get_agent_by_id(pk):
     agentDAO = models.Agent.objects.get(pk=pk)
     agent = AgentWs(agentDAO)
     return agent
+
 
 class AgentConsumer(AsyncJsonWebsocketConsumer):
     unique_id = ""
@@ -150,19 +175,28 @@ class AgentConsumer(AsyncJsonWebsocketConsumer):
     host = "0.0.0.0"
 
     async def connect(self):
-        if not self.scope['user'].is_authenticated:
+        if not self.scope["user"].is_authenticated:
             await self.close(code=403)
 
-        self.agent_id = self.scope['url_route']['kwargs']['agent_id']
-        self.agent_queue = 'agent_queue_{}'.format(self.agent_id)
+        self.agent_id = self.scope["url_route"]["kwargs"]["agent_id"]
+        self.agent_queue = "agent_queue_{}".format(self.agent_id)
         await self.channel_layer.group_add(self.agent_queue, self.channel_name)
 
         await self.accept()
         self.agent = await get_agent_by_id(self.agent_id)
-        logger.info("Connected Agent: agent_queue:%r, agent_id:%r", self.agent_queue, self.agent_id)
+        logger.info(
+            "Connected Agent: agent_queue:%r, agent_id:%r",
+            self.agent_queue,
+            self.agent_id,
+        )
 
     async def disconnect(self, close_code):
-        logger.info("Disconnected Agent:%r, agent_queue:%r, agent_id:%r", self, self.agent_queue, self.agent_id)
+        logger.info(
+            "Disconnected Agent:%r, agent_queue:%r, agent_id:%r",
+            self,
+            self.agent_queue,
+            self.agent_id,
+        )
         await self.channel_layer.group_discard(self.agent_queue, self.channel_name)
 
     @classmethod
@@ -170,46 +204,49 @@ class AgentConsumer(AsyncJsonWebsocketConsumer):
         try:
             return json.loads(text_data)
         except json.JSONDecodeError:
-            logger.error('Invalid json: %r', text_data) 
-            return {'type':'invalid.event'}
+            logger.error("Invalid json: %r", text_data)
+            return {"type": "invalid.event"}
 
     async def receive_json(self, event):
-        logger.info('Agent:%s, Received: %s', self, event)
+        logger.info("Agent:%s, Received: %s", self, event)
         await self.channel_layer.group_send(self.agent_queue, event)
 
     async def send_json(self, content, close=False):
-        logger.info('Agent:%s, Sending: %s', self, content)
+        logger.info("Agent:%s, Sending: %s", self, content)
         await super().send_json(content, close=close)
 
     async def create_task(self, event):
 
         new_task = await task_new()
-        await self.send_json({'type': 'task.created', 'reference': str(new_task.command_ref)})
+        await self.send_json(
+            {"type": "task.created", "reference": str(new_task.command_ref)}
+        )
 
     async def invalid_event(self, event):
-        await self.send_json({'type':'error', 'content': 'invalid json received'})
+        await self.send_json({"type": "error", "content": "invalid json received"})
 
     @require_task
     async def shell_execute(self, event, task):
         # {"type":"shell.execute", "command":"ls", "reference":""}
-        result = await self.agent.shell_execute(event.get('command'))
-        logger.debug('result: %r', repr(result))
+        result = await self.agent.shell_execute(event.get("command"))
+        logger.debug("result: %r", repr(result))
         await complete_task(task)
-        response = {'type': 'shell.execute.result',
-                    'reference': task.command_ref}
+        response = {"type": "shell.execute.result", "reference": task.command_ref}
         response.update(result)
         await self.send_json(response)
 
     @require_task
     async def file_manager_list_directory(self, event, task):
         # {"type": "file_manager.list_directory", "directory": "", "reference": ""}
-        result = await self.agent.list_directory(event.get('directory'))
-        logger.debug('result: %r', repr(result))
+        result = await self.agent.list_directory(event.get("directory"))
+        logger.debug("result: %r", repr(result))
         await complete_task(task)
-        response = {'type': 'file_manager.list_directory.result',
-                    'reference': task.command_ref}
+        response = {
+            "type": "file_manager.list_directory.result",
+            "reference": task.command_ref,
+        }
         response.update(result)
-        logger.debug('response: %r', repr(response))
+        logger.debug("response: %r", repr(response))
         await self.send_json(response)
 
     @require_task
@@ -218,55 +255,64 @@ class AgentConsumer(AsyncJsonWebsocketConsumer):
         result = {}
         try:
             transition_file = await get_task_file(task)
-            logger.info('Uploading transition_file: %r', transition_file)
-            result = await self.agent.upload_file(transition_file, event.get('target_directory'))
+            logger.info("Uploading transition_file: %r", transition_file)
+            result = await self.agent.upload_file(
+                transition_file, event.get("target_directory")
+            )
         except Exception as e:
             logger.exception("testng")
             result = {
-                'error': 'Unable to retrive file. Please upload the file after generating a task'}
+                "error": "Unable to retrive file. Please upload the file after generating a task"
+            }
         await complete_task(task)
-        response = {'type': 'file_manager.upload.result',
-                    'reference': task.command_ref}
+        response = {"type": "file_manager.upload.result", "reference": task.command_ref}
         response.update(result)
         await self.send_json(response)
 
     @require_task
     async def file_manager_download(self, event, task):
         # {'type': 'file_manager.download', 'file_path':'C:\\Users'}
-        file_path = event.get('file_path')
+        file_path = event.get("file_path")
         file_bytes = await self.agent.download_file(file_path)
         await persist_transition_file(task, file_path, file_bytes)
         # await complete_task(task) # Task is not completed until downloaded
-        response = {'type': 'file_manager.download.result',
-                    'reference': task.command_ref}
-        response.update({"content":"file ready to download"})
+        response = {
+            "type": "file_manager.download.result",
+            "reference": task.command_ref,
+        }
+        response.update({"content": "file ready to download"})
         await self.send_json(response)
 
     @require_task
     async def process_manager_list(self, event, task):
         # {"type": "file_manager.list_directory", "directory": "", "reference": ""}
         result = await self.agent.list_processes()
-        logger.debug('result: %r', repr(result))
+        logger.debug("result: %r", repr(result))
         await complete_task(task)
-        response = {'type': 'process_manager.list.result',
-                    'reference': task.command_ref}
+        response = {
+            "type": "process_manager.list.result",
+            "reference": task.command_ref,
+        }
         response.update(result)
-        logger.debug('response: %r', repr(response))
+        logger.debug("response: %r", repr(response))
         await self.send_json(response)
 
     @require_task
     async def process_manager_terminate(self, event, task):
         result = {}
         try:
-            logger.info('...')
-            result = await self.agent.process_terminate(event['pid'])
+            logger.info("...")
+            result = await self.agent.process_terminate(event["pid"])
         except KeyError as e:
             result = {
-                    'type': 'error',
-                    'content': 'the process id should be specified in the "pid" attribute'}
+                "type": "error",
+                "content": 'the process id should be specified in the "pid" attribute',
+            }
         await complete_task(task)
-        response = {'type': 'process_manager.terminate.result',
-                    'reference': task.command_ref}
+        response = {
+            "type": "process_manager.terminate.result",
+            "reference": task.command_ref,
+        }
         response.update(result)
         await self.send_json(response)
 
@@ -274,15 +320,18 @@ class AgentConsumer(AsyncJsonWebsocketConsumer):
     async def process_manager_inject(self, event, task):
         result = {}
         try:
-            logger.info('...')
-            result = await self.agent.process_inject(event['pid'])
+            logger.info("...")
+            result = await self.agent.process_inject(event["pid"])
         except KeyError as e:
             result = {
-                    'type': 'error',
-                    'content': 'the process id should be specified in the "pid" attribute'}
+                "type": "error",
+                "content": 'the process id should be specified in the "pid" attribute',
+            }
         await complete_task(task)
-        response = {'type': 'process_manager.inject.result',
-                    'reference': task.command_ref}
+        response = {
+            "type": "process_manager.inject.result",
+            "reference": task.command_ref,
+        }
         response.update(result)
         await self.send_json(response)
 
@@ -290,29 +339,44 @@ class AgentConsumer(AsyncJsonWebsocketConsumer):
     async def post_exploitation_available(self, event, task):
         result = await self.agent.post_exploitation_available()
         await complete_task(task)
-        response = {'type': 'post_exploitation.available.result',
-                    'reference': task.command_ref}
+        response = {
+            "type": "post_exploitation.available.result",
+            "reference": task.command_ref,
+        }
         response.update(result)
-        print('OBTEINDED RESPONSE %r', response)
+        print("OBTEINDED RESPONSE %r", response)
         await self.send_json(response)
 
     @require_task
     async def post_exploitation_execute(self, event, task):
-        response = {'type': 'post_exploitation.execute.result.ok',
-                    'reference': task.command_ref}
+        response = {
+            "type": "post_exploitation.execute.result.ok",
+            "reference": task.command_ref,
+        }
         # availables await self.agent.post_exploitation_available()
-        result = await self.agent.post_exploitation_execute(event['id_module'], event.get('options', []))
+        result = await self.agent.post_exploitation_execute(
+            event["id_module"], event.get("options", [])
+        )
         # save_task_event?
         response.update(result)
         await self.send_json(response)
 
-        response = {'type': 'post_exploitation.execute.result.shell',
-                    'reference': task.command_ref}
-        result = await self.agent.post_exploitation_retrieve(event['id_module'], event.get('options', []))
+        response = {
+            "type": "post_exploitation.execute.result.shell",
+            "reference": task.command_ref,
+        }
+        result = await self.agent.post_exploitation_retrieve(
+            event["id_module"], event.get("options", [])
+        )
         # save_task_event?
         await complete_task(task)
-        if 'content_url' in result:
-            result.update({'content_url':result['content_url'].format(self.agent_id, task.command_ref)})
+        if "content_url" in result:
+            result.update(
+                {
+                    "content_url": result["content_url"].format(
+                        self.agent_id, task.command_ref
+                    )
+                }
+            )
         response.update(result)
         await self.send_json(response)
-

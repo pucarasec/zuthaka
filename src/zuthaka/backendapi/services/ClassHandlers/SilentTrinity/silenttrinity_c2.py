@@ -1,3 +1,4 @@
+from django.forms import ValidationError
 from .. import ResourceExistsError, ResourceNotFoundError
 from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc
 from ....dtos import (
@@ -183,11 +184,14 @@ class SilentTriC2(C2):
         raises ConectionError in case of not be able to connect to c2 instance
         raises ConnectionRefusedError in case of not be able to authenticate
         """
-
-        if await self.connection.connect():
-            return ResponseDto(successful_transaction=True)
-        else:
-            return ResponseDto(successful_transaction=False)
+        try:
+            result = await self.connection.connect()
+            if result:
+                return ResponseDto(successful_transaction=True)
+            else:
+                return ResponseDto(successful_transaction=False)
+        except websockets.exceptions.InvalidURI:
+            raise ValueError('Invalid URI')
 
     def exit_gracefully(self, *args):
         if hasattr(self, "ws"):

@@ -159,6 +159,9 @@ class Service:
         except KeyError as err:
             raise ValueError("Handler not found: {!r}".format(err))
 
+        except ResourceExistsError as err:
+            raise ValueError("Resources required already in use: {!r}".format(err))
+
     async def delete_listener(self, dto: RequestDto):
         """
         removes a listener from a corresponding c2 instance
@@ -210,6 +213,9 @@ class Service:
                 raise ConnectionError
         except KeyError as err:
             raise ValueError("Handler not found: {!r}".format(err))
+        except ResourceNotFoundError:
+            raise ValueError("Inconsistency : The resource was not found on the server {!r}".format(err))
+
 
     async def retrieve_agents(self, dto: RequestDto) -> FileIO:
         """

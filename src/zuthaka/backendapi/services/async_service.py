@@ -137,15 +137,15 @@ class Service:
 
             current_c2 = current_c2_handler(c2_dto.options)
 
-            launcher_dto = dto.listener
-            if not launcher_dto:
+            listener_dto = dto.listener
+            if not listener_dto:
                 raise ValueError("invalid dto missing c2_dto")
-            if not launcher_dto.listener_type:
+            if not listener_dto.listener_type:
                 raise ValueError("invalid dto missing listener_type")
-            launcher_types = await current_c2.get_listener_types()
-            listener_handler = launcher_types[launcher_dto.listener_type]
+            listener_types = await current_c2.get_listener_types()
+            listener_handler = listener_types[listener_dto.listener_type]
 
-            _listener_options = launcher_dto.options
+            _listener_options = listener_dto.options
             try:
                 response_dto = await asyncio.wait_for(
                     listener_handler.create_listener(_listener_options, dto),
@@ -153,7 +153,7 @@ class Service:
                 )
                 # add check demo
                 return response_dto.created_listener._asdict()
-            except asyncio.TimeoutError:
+            except asyncio.TimeoutError as err:
                 raise ConnectionError
 
         except KeyError as err:

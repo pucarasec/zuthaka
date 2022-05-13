@@ -61,6 +61,9 @@ class CovenantC2(C2):
             CovenantPowershellLauncherType.name: CovenantPowershellLauncherType(
                 self.options["url"], self
             ),
+            CovenantBinaryLauncherType.name: CovenantBinaryLauncherType(
+                self.options["url"], self
+            ),
         }
 
         self._agent_types = {
@@ -297,6 +300,65 @@ class CovenantPowershellLauncherType(LauncherType):
         except aiohttp.client_exceptions.ClientConnectorError as err:
             raise ConnectionError(err)
 
+class CovenantBinaryLauncherType(LauncherType):
+    name = "Binary Launcher"
+    description = (
+        "Uses GruntHTTP.exe to launch Agent. Uses a generated .NET35 Framework binary to launch a Grunt."
+    )
+    registered_options = [
+        OptionDesc(
+            name="Delay",
+            description="Amount of time that Agent will take the agent to contact the listener in seconds",
+            example="5",
+            field_type="integer",
+            required=True,
+        ),
+    ]
+
+    def __init__(self, url: str, _c2: CovenantC2) -> None:
+        self._url = url
+        self._c2 = _c2
+
+    async def create_and_retrieve_launcher(self, options: Options, dto: RequestDto):
+        try:
+            headers = {"Authorization": "Bearer {}".format(await self._c2._get_token())}
+            target = "{}/api/launchers/binary".format(self._url)
+            listener_id = dto.listener.listener_internal_id
+
+            creation_dict = {
+                "listenerId": listener_id,
+                "ImplantTemplateId": 1,
+                "delay": options.get("Delay", 1),
+            }
+            async with self._c2.get_session() as session:
+                async with session.put(
+                    target, headers=headers, json=creation_dict
+                ) as response:
+                    launcher_internal_id = ""
+                    launcher_options = await response.json()
+        except aiohttp.client_exceptions.ClientConnectorError as err:
+            raise ConnectionError(err)
+        try:
+            headers = {"Authorization": "Bearer {}".format(await self._c2._get_token())}
+            target = "{}/api/launchers/binary".format(self._url)
+            async with self._c2.get_session() as session:
+                async with session.post(target, headers=headers) as response:
+                    response_dict = await response.json()
+                    payload_content = response_dict["encodedLauncherString"]
+                    payload_name = response_dict["name"] + "exe"
+                    created_dto = CreateLauncherDto(
+                        launcher_internal_id="",
+                        payload_content=payload_content,
+                        payload_name=payload_name,
+                        launcher_options=launcher_options,
+                    )
+                    response_dto = ResponseDto(
+                        successful_transaction=True, created_launcher=created_dto
+                    )
+                    logger.debug("[*] payload_name: %r ", response_dict["name"])
+                    return response_dto
+        except aiohttp.client_exceptions.ClientConnectorError as err:
+            raise ConnectionError(err)
 
 class PowershellAgentType(AgentType):
     agent_shell_type = "powershell"

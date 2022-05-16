@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Test agent</title>
+</head>
+
+<body>
+
+    Log:
+    <textarea id="ws-log" cols="100" rows="20"></textarea><br>
+
+    <tr>
+        <li>{"type":"create.task"}</li>
+        <li>{"type":"shell.execute", "command":"ls", "reference":""}</li>
+	<li>{"type": "file_manager.list_directory", "directory": "", "reference": ""}</li>
+	<li>{"type": "file_manager.upload", "target_directory":"/home/lbonastre/tempo/", "reference":""}</li>
+	<li>{"type": "file_manager.download", "file_path":"/home/lbonastre/tempo/algo.txt", "reference":""}</li>
+    </tr>
+
+    Token: <input id="ws-token" type="text" size="100">
+    <input id="ws-create" type="button" value="Send">
+    <br><br>
+
+    Event:<input id="ws-message-input" type="text" size="100">
+    <input id="ws-message-submit" type="button" value="Send">
+    <br><br>
+
+    Filemanager:
+    <form id="avatar_form">
+	<div class="form-group">
+	    <label for="id_avatar">Choose an image for your avatar</label>
+	    <input type="file" class="form-control-file" id="id_avatar"/>
+	    <br>
+	    Task refrence: <input id="ws-task-reference" type="text" size="100">
+	</div>
+	<button type="submit" class="btn btn-primary">Upload</button>
+    </form>
+
+
+    <!--<script src="test.js"></script>-->
+
+    <script>
+
+	document.getElementById('avatar_form').addEventListener('submit', function(event) {
+	    event.preventDefault();
+	    let input = document.getElementById('id_avatar');
+
+	    let data = new FormData();
+	    data.append('file', input.files[0]);
+	    var task_reference =  document.querySelector('#ws-task-reference').value
+	    data.append('task-reference', task_reference);
+
+	    //fetch('http://dev2:8080/agents/1/upload/', {
+	    fetch('http://127.0.0.1:8000/agents/1/upload/', {
+		method: 'POST',
+		headers: {
+		    'Authorization': 'Bearer ' + document.querySelector('#ws-token').value 
+		},
+		body: data
+	    }).then(response => {
+		return response.json();
+	    }).then(data => {
+		console.log(data);
+	    }).catch((error) => {
+		console.error('Error:', error);
+	    });
+	});
+
+        //utils
+        document.querySelector('#ws-message-input').focus();
+        document.querySelector('#ws-message-input').onkeyup = function(e) {
+            if (e.keyCode === 13) { // enter, return
+                document.querySelector('#ws-message-submit').click();
+            }
+        };
+
+        document.querySelector('#ws-token').value = "c51b3b83ec328c77bdf0c571ebf6aff6367e4796";
+        document.querySelector('#ws-message-submit').onclick = function(e) {
+            const messageInputDom = document.querySelector('#ws-message-input');
+            const message = messageInputDom.value;
+            document.querySelector('#ws-log').value += ('Sended: ' + message + '\n');
+            wsSocket.send(message);
+            messageInputDom.value = '';
+        };
+
+        document.querySelector('#ws-create').onclick = function(e) {
+            const token = document.querySelector('#ws-token').value;
+            //window.wsSocket = new WebSocket('ws://dev2:8080/agents/1/interact/?access_token=' + token);
+            window.wsSocket = new WebSocket('ws://127.0.0.1:8000/agents/1/interact/?access_token=' + token);
+
+            window.wsSocket.onmessage = function(e) {
+                var data = JSON.stringify(e.data);
+                document.querySelector('#ws-log').value += ('Received: ' + data + '\n');
+            };
+        }
+    </script>
+
+</body>
+
+</html>

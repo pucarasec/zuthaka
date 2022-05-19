@@ -1,5 +1,5 @@
 from .. import ResourceExistsError, ResourceNotFoundError
-from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc
+from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc, PostExploitation
 from ....dtos import (
     AgentDto,
     CreateListenerDto,
@@ -58,10 +58,11 @@ class CovenantC2(C2):
             ),
         }
         self._launcher_types = {
-            CovenantPowershellLauncherType.name: CovenantPowershellLauncherType(
+
+            CovenantBinaryLauncherType.name: CovenantBinaryLauncherType(
                 self.options["url"], self
             ),
-            CovenantBinaryLauncherType.name: CovenantBinaryLauncherType(
+            CovenantPowershellLauncherType.name: CovenantPowershellLauncherType(
                 self.options["url"], self
             ),
         }
@@ -258,6 +259,12 @@ class CovenantPowershellLauncherType(LauncherType):
     def __init__(self, url: str, _c2: CovenantC2) -> None:
         self._url = url
         self._c2 = _c2
+        # should self._c2 be independent
+        self.post_exploitation_types = {
+            PortScan.name: PortScan(
+                # self.options["url"], self._c2
+            ),
+        }
 
     async def create_and_retrieve_launcher(self, options: Options, dto: RequestDto):
         try:
@@ -300,6 +307,33 @@ class CovenantPowershellLauncherType(LauncherType):
         except aiohttp.client_exceptions.ClientConnectorError as err:
             raise ConnectionError(err)
 
+class PortScan(PostExploitation):
+    name = "PortScan"
+    registered_options = [
+        OptionDesc(
+            name="target",
+            description="address of the target to scan",
+            example="192.168.1.101",
+            field_type="string",
+            required=True,
+        ),
+        OptionDesc(
+            name="ports",
+            description="ports to scan over the target address",
+            example="1,1000",
+            field_type="string",
+            required=True,
+        ),
+    ]
+    def __init__(self,) -> None:
+    # def __init__(self, url: str, _c2: CovenantC2) -> None:
+        # self._url = url
+        # self._c2 = _c2
+        pass
+
+    async def execute(self, Options):
+        pass
+
 class CovenantBinaryLauncherType(LauncherType):
     name = "Binary Launcher"
     description = (
@@ -337,6 +371,7 @@ class CovenantBinaryLauncherType(LauncherType):
                     launcher_internal_id = ""
                     launcher_options = await response.json()
         except aiohttp.client_exceptions.ClientConnectorError as err:
+            logger.debug("[*] connection ERROR")
             raise ConnectionError(err)
         try:
             headers = {"Authorization": "Bearer {}".format(await self._c2._get_token())}
@@ -344,6 +379,7 @@ class CovenantBinaryLauncherType(LauncherType):
             async with self._c2.get_session() as session:
                 async with session.post(target, headers=headers) as response:
                     response_dict = await response.json()
+                    logger.debug("[*] response dict: %r", response_dict)
                     payload_content = response_dict["encodedLauncherString"]
                     payload_name = response_dict["name"] + "exe"
                     created_dto = CreateLauncherDto(

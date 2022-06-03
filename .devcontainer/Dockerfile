@@ -13,7 +13,8 @@ ENV DJANGO_ALLOWED_HOSTS $DJANGO_ALLOWED_HOSTS
 ENV DJANGO_SECRET_KEY $DJANGO_SECRET_KEY
 ENV DJANGO_CORS_ORIGIN_WHITELIST $DJANGO_CORS_ORIGIN_WHITELIST
 
-RUN apt-get update && apt-get install gcc vim apt-utils -y  && apt-get clean && rm -rf /var/lib/apt/lists/*
+#RUN apt-get update && apt-get install gcc vim apt-utils -y  && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install gcc vim -y  && apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN python3 -m pip install --upgrade pip
 
 # Added sudo 
@@ -35,4 +36,9 @@ RUN mkdir Data; exit 0
 # RUN python manage.py runscript reset_loaded_db
 RUN ./reset_db.sh
 RUN python manage.py collectstatic
+
+USER root
+RUN echo 'pucara ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+# RUN myuser ALL=(ALL) NOPASSWD: ALL
+USER pucara
 

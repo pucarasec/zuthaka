@@ -80,29 +80,29 @@ def persist_launcher_types(handler, c2_type):
 
     return launcher_daos
 
-# def persist_postexploitation_types(handler, c2_type):
 
-#     post_exploits = collect_classes(handler, c2.PostExploitationType)
-#     print('[-] Post-exploitation types collected:', post_exploits)
-#     post_exploit_daos = []
-#     for post_exploit in post_exploits:
-#         post_exploit_type = models.PostExploitationType()
-#         post_exploit_type.name = post_exploit.name
-#         post_exploit_type.description = post_exploit.description
-#         post_exploit_type.c2_type = c2_type
-#         post_exploit_type.save()
-#         post_exploit_daos.append(launcher_type)
+def persist_postexploitation_types(handler, c2_type):
+    post_exploits = collect_classes(handler, c2.PostExploitationType)
+    print('[-] Post-exploitation types collected:', post_exploits)
+    post_exploit_daos = []
+    for post_exploit in post_exploits:
+        post_exploit_type = models.PostExploitationType()
+        post_exploit_type.name = post_exploit.name
+        post_exploit_type.description = post_exploit.description
+        post_exploit_type.c2_type = c2_type
+        post_exploit_type.save()
+        post_exploit_daos.append(post_exploit_type)
 
-#         for registered_option in post_exploit.registered_options:
-#             launcher_type_option = models.OptionDescription()
-#             launcher_type_option.launcher_type = launcher_type
-#             launcher_type_option.name = registered_option.name
-#             launcher_type_option.example = registered_option.example
-#             launcher_type_option.description = registered_option.description
-#             launcher_type_option.field_type = registered_option.field_type
-#             launcher_type_option.required = registered_option.required
-#             launcher_type_option.save()
-#     return post_exploit_daos
+        for registered_option in post_exploit.registered_options:
+            post_exploit_type_option = models.PostExploitTypeOption()
+            post_exploit_type_option.post_exploit_type = post_exploit
+            post_exploit_type_option.name = registered_option.name
+            post_exploit_type_option.example = registered_option.example
+            post_exploit_type_option.description = registered_option.description
+            post_exploit_type_option.field_type = registered_option.field_type
+            post_exploit_type_option.required = registered_option.required
+            post_exploit_type_option.save()
+    return post_exploit_daos
 
 
 def run():

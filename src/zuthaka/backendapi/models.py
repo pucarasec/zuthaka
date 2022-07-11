@@ -164,17 +164,24 @@ class AgentTaskEvent(models.Model):
     transition_file = models.FileField(blank=True, null=True)
 
 
-class Project(models.Model):
+class PostExploitationType(models.Model):
     name = models.CharField(max_length=250)
     description = models.CharField(max_length=250, blank=True, null=True)
-    creation_date = models.DateTimeField(default=datetime.datetime.now)
-    update_date = models.DateTimeField(default=datetime.datetime.now)
-    documentation = models.CharField(
-        max_length=250, blank=True, null=True
-    )  # This may need to be a file
-    admins = models.ManyToManyField(User, related_name="admins")
-    operators = models.ManyToManyField(User, related_name="operators")
-    viewers = models.ManyToManyField(User, related_name="viewers")
+    c2_type = models.ForeignKey(C2Type, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
+
+
+class PostExploitTypeOption(models.Model):
+    post_exploit_type = models.ForeignKey(
+        PostExploitationType, related_name="options", on_delete=models.CASCADE
+    )
+    name = models.CharField(max_length=250)
+    example = models.CharField(max_length=250, blank=True, null=True)
+    description = models.CharField(max_length=250, blank=True, null=True)
+    field_type = models.CharField(max_length=250)
+    required = models.CharField(max_length=250)
 
     def __str__(self):
         return self.name

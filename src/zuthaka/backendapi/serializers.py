@@ -12,7 +12,6 @@ from .models import LauncherOption
 from .models import LauncherType
 from .models import LauncherTypeOption
 from .models import Agent
-from .models import Project
 from .models import AgentTask
 from .models import AgentTaskEvent
 from django.contrib.auth.models import User
@@ -565,23 +564,3 @@ class AgentSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(repr(err))
         return dto
 
-
-# Projects
-
-
-class ProjectSerializer(serializers.ModelSerializer):
-    admins = UserSerializer(many=True)
-    operators = UserSerializer(many=True)
-    viewers = UserSerializer(many=True)
-
-    class Meta:
-        model = Project
-        fields = (
-            "id",
-            "name",
-            "description",
-            "update_date",
-            "admins",
-            "operators",
-            "viewers",
-        )

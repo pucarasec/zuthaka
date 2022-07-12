@@ -1,5 +1,5 @@
 from .. import ResourceExistsError, ResourceNotFoundError
-from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc, PostExploitation
+from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc, PostExploitationType
 from ....dtos import (
     AgentDto,
     CreateListenerDto,
@@ -307,33 +307,6 @@ class CovenantPowershellLauncherType(LauncherType):
         except aiohttp.client_exceptions.ClientConnectorError as err:
             raise ConnectionError(err)
 
-class PortScan(PostExploitation):
-    name = "PortScan"
-    registered_options = [
-        OptionDesc(
-            name="target",
-            description="address of the target to scan",
-            example="192.168.1.101",
-            field_type="string",
-            required=True,
-        ),
-        OptionDesc(
-            name="ports",
-            description="ports to scan over the target address",
-            example="1,1000",
-            field_type="string",
-            required=True,
-        ),
-    ]
-    def __init__(self,) -> None:
-    # def __init__(self, url: str, _c2: CovenantC2) -> None:
-        # self._url = url
-        # self._c2 = _c2
-        pass
-
-    async def execute(self, Options):
-        pass
-
 class CovenantBinaryLauncherType(LauncherType):
     name = "Binary Launcher"
     description = (
@@ -396,8 +369,37 @@ class CovenantBinaryLauncherType(LauncherType):
         except aiohttp.client_exceptions.ClientConnectorError as err:
             raise ConnectionError(err)
 
+
+class PortScan(PostExploitationType):
+    name = "PortScan"
+    description = 'Scan the target host for open ports'
+    registered_options = [
+        OptionDesc(
+            name="target",
+            description="address of the target to scan",
+            example="192.168.1.101",
+            field_type="string",
+            required=True,
+        ),
+        OptionDesc(
+            name="ports",
+            description="ports to scan over the target address",
+            example="1,1000",
+            field_type="string",
+            required=True,
+        ),
+    ]
+    def __init__(self,) -> None:
+        pass
+
+    async def generic_execute(self, Options):
+        return "test"
+
+
+
 class PowershellAgentType(AgentType):
     agent_shell_type = "powershell"
+    post_exploitation_types = [PortScan]
 
     def __init__(self, url: str, _c2: CovenantC2) -> None:
         self._url = url
@@ -552,3 +554,4 @@ class PowershellAgentType(AgentType):
                 raise ConnectionError("unable  to retrieve  task")
         except aiohttp.client_exceptions.ClientConnectorError as err:
             raise ConnectionError(err)
+

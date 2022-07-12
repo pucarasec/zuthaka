@@ -167,19 +167,16 @@ class AgentType(ABC):
         raise NotImplementedError
 
     async def get_available_post_exploitation_modules(self) -> Iterable["PostExploitation"]:
-        # raise NotImplementedError
         return self.post_exploitation_types
 
 
-
-class PostExploitation(ABC):
-    pass
+class PostExploitationType(ABC):
      
-    # @abstractmethod
-    # async def generic_execute(
-    #     self, options: Options, dto: RequestDto
-    # ) -> str:
-    #     raise NotImplementedError
+    @abstractmethod
+    async def generic_execute(
+        self, options: Options, dto: RequestDto
+    ) -> str:
+        raise NotImplementedError
 
     # @abstractmethod
     # async def file_execute(

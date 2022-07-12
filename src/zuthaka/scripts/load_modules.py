@@ -95,7 +95,7 @@ def persist_postexploitation_types(handler, c2_type):
 
         for registered_option in post_exploit.registered_options:
             post_exploit_type_option = models.PostExploitTypeOption()
-            post_exploit_type_option.post_exploit_type = post_exploit
+            post_exploit_type_option.post_exploit_type = post_exploit_type
             post_exploit_type_option.name = registered_option.name
             post_exploit_type_option.example = registered_option.example
             post_exploit_type_option.description = registered_option.description
@@ -117,4 +117,5 @@ def run():
         print('[*] Listener Persisted: ', listeners)
         launchers = persist_launcher_types(handler, c2_type)
         print('[*] Launchers Persisted: ', launchers)
-
+        post_exploit = persist_postexploitation_types(handler, c2_type)
+        print('[*] Post exploitation Persisted: ', post_exploit)

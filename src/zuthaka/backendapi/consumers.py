@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 """
  # Types of events:
 
-
  ## Shell   consistency > availability
    -command
     SEND
@@ -344,7 +343,7 @@ class AgentConsumer(AsyncJsonWebsocketConsumer):
             "reference": task.command_ref,
         }
         response.update(result)
-        print("OBTEINDED RESPONSE %r", response)
+        # print("OBTEINDED RESPONSE %r", response)
         await self.send_json(response)
 
     @require_task

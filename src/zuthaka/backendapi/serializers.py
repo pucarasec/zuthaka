@@ -14,6 +14,8 @@ from .models import LauncherTypeOption
 from .models import Agent
 from .models import AgentTask
 from .models import AgentTaskEvent
+from .models import PostExploitationType
+from .models import PostExploitTypeOption
 from django.contrib.auth.models import User
 
 from .dtos import (
@@ -564,3 +566,33 @@ class AgentSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(repr(err))
         return dto
 
+
+# PostExploitation serializers
+class PostExploitationTypeOptionSerializer(serializers.ModelSerializer):
+    type = serializers.CharField(source="field_type")
+
+    class Meta:
+        model = PostExploitTypeOption
+        fields = ("name", "example", "description", "type", "required")
+
+
+# class PostExploitationsAvailableField(serializers.RelatedField):
+#     def to_representation(self, value):
+#         c2s = C2.objects.all().filter(c2_type=value)
+#         listeners_available = []
+#         for c2 in c2s:
+#             listeners_available.extend(Listener.objects.all().filter(c2=c2))
+#         response = [
+#             {"listener_id": listener.id, "listener_type": listener.listener_type.name}
+#             for listener in listeners_available
+#         ]
+#         return response
+
+class PostExploitationTypeSerializer(serializers.ModelSerializer):
+    options = PostExploitationTypeOptionSerializer(many=True)
+    # available_listeners = ListenersAvailableField(source="c2_type", read_only=True)
+
+    class Meta:
+        model = ListenerType
+        # fields = ("id", "name", "available_listeners", "description", "options")
+        fields = ("id", "name", "description", "options")

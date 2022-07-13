@@ -9,6 +9,7 @@ from asgiref.sync import sync_to_async
 
 from . import models
 from .serializers import AgentSerializer
+from .serializers import PostExploitationTypeSerializer
 from .services.async_service import Service  # this might be a singleto
 from .services.exceptions import (
     ResourceNotFoundError,
@@ -199,6 +200,11 @@ def field_file_to_dto(field_file):
     # dto.update({'file_name':name, 'file_content': b64_content.decode('utf-8')})
     return name, b64_content.decode("utf-8")
 
+@sync_to_async
+def collect_post_exploitation(agent_model):
+    available_post_exploitation = models.PostExploitationType.objects.filter(c2_type=agent_model.c2.c2_type)
+    serializer_class = PostExploitationTypeSerializer(available_post_exploitation, many=True)
+    return serializer_class.data
 
 class AgentWs:
     """
@@ -340,9 +346,8 @@ class AgentWs:
         return {"content": "Functionality not implemented"}
 
     async def post_exploitation_available(self):
-        service = Service.get_service()
-        dto = copy(self.agent_dto)
-        available_list = await service.get_available_post_exploitation_modules(dto)
+        available_list = await collect_post_exploitation(self.agent_model)
+        
         return {"content": available_list}
 
         # this should be db based

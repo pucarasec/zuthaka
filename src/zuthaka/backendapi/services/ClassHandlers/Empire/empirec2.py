@@ -131,7 +131,7 @@ class EmpireC2(C2):
 
 
 class EmpireHTTPListenerType(ListenerType):
-    name = "empire-http-profile"
+    name = "http-profile (Empire)"
     description = "standard http listener, messages are delivered in enconded comment"
     registered_options = [
         OptionDesc(
@@ -220,7 +220,7 @@ class EmpireHTTPListenerType(ListenerType):
 
 
 class EmpireDllLauncherType(LauncherType):
-    name = "Dll Launcher"
+    name = "Dll Launcher (Empire)"
     description = "Generate a PowerPick Reflective DLL to inject with stager code."
     registered_options = [
         OptionDesc(

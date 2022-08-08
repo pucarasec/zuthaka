@@ -23,7 +23,10 @@ from ..dtos import (
     RequestDto,
     DownloadFileDto,
     UploadFileDto,
+    PostExploitExecuteDto,
 )
+
+TIMEOUT = 20
 
 
 def filter_dict(original_dict, set_of_keys):
@@ -91,7 +94,7 @@ class Service:
             current_c2_handler = self._c2types[dto.c2.c2_type]
             current_c2 = current_c2_handler(dto.c2.options)
             try:
-                response = await asyncio.wait_for(current_c2.is_alive(dto), timeout=5.0)
+                response = await asyncio.wait_for(current_c2.is_alive(dto), timeout=TIMEOUT)
                 if response.successful_transaction is not True:
                     raise ConnectionError
                 return response.successful_transaction
@@ -149,7 +152,7 @@ class Service:
             try:
                 response_dto = await asyncio.wait_for(
                     listener_handler.create_listener(_listener_options, dto),
-                    timeout=5.0,
+                    timeout=TIMEOUT,
                 )
                 # add check demo
                 return response_dto.created_listener._asdict()
@@ -206,7 +209,7 @@ class Service:
                     listener_handler.delete_listener(
                         internal_id, _listener_options, dto
                     ),
-                    timeout=5.0,
+                    timeout=TIMEOUT,
                 )
                 return result
             except asyncio.TimeoutError:
@@ -264,7 +267,7 @@ class Service:
             try:
                 logger.debug("c2: %r", c2)
                 response_obtained_agents = await asyncio.wait_for(
-                    current_c2.retrieve_agents(dto), timeout=5.0
+                    current_c2.retrieve_agents(dto), timeout=TIMEOUT
                 )
                 logger.debug("obtained_agents: %r", response_obtained_agents)
                 current_agents = []
@@ -347,7 +350,7 @@ class Service:
                     launcher_handler.create_and_retrieve_launcher(
                         launcher_dto.options, dto
                     ),
-                    timeout=15.0,
+                    timeout=TIMEOUT,
                 )
                 logger.debug("response: %r ", response)
                 downloaded_launcher = response.created_launcher._asdict()
@@ -410,7 +413,7 @@ class Service:
             agent_handler = agent_types[_agent_type]
             try:
                 shell_result = await asyncio.wait_for(
-                    agent_handler.shell_execute(command, shell_dto, dto), timeout=20.0
+                    agent_handler.shell_execute(command, shell_dto, dto), timeout=TIMEOUT
                 )
                 logger.debug(shell_result)
                 response_dto = {}
@@ -472,7 +475,7 @@ class Service:
             agent_handler = agent_types[_agent_type]
             try:
                 downloaded_file = await asyncio.wait_for(
-                    agent_handler.download_file(download_dto, dto), timeout=10.0
+                    agent_handler.download_file(download_dto, dto), timeout=TIMEOUT
                 )
                 logger.debug("service response dto: %r", downloaded_file)
                 response_dto = {}
@@ -536,7 +539,7 @@ class Service:
             agent_handler = agent_types[_agent_type]
             try:
                 result_dto = await asyncio.wait_for(
-                    agent_handler.upload_file(upload_dto, dto), timeout=5.0
+                    agent_handler.upload_file(upload_dto, dto), timeout=TIMEOUT
                 )
                 response_dto = {}
                 response_dto.update(result_dto or {})
@@ -548,42 +551,12 @@ class Service:
         except KeyError as err:
             raise ValueError("Handler not found: {!r}".format(err))
 
-    # async def post_exploitation(self, dto: Dict[str, Any]) -> str:
+    #    async def post_exploitation_downloadable(self, dto: Dict[str, Any]) -> str:
     #     """
     #     retrives a created launcher using an launcher_internal_id
     #        raises ValueError in case of invalid dto
     #        raises ConectionError in case of not be able to connect to c2 instance
     #        raises ResourceNotFoundError
-
-    #     example dto:
-    #         {'c2_type': 'EmpireC2Type',
-    #         'c2_options': [
-    #                 {
-    #                     "name": "url",
-    #                     "value": "https://127.0.0.1:7443"
-    #                 },
-    #                 {
-    #                     "name": "username",
-    #                     "value": "cobbr"
-    #                 },
-    #                 {
-    #                     "name": "password",
-    #                     "value": "NewPassword!"
-    #                 }
-    #             ],
-    #             'agent_internal_id': '123',
-    #             'module' : 'port_scan',
-    #             'options': [ {'name': 'target', 'ports':'80,8443'} ]
-    #             """
-    #     pass
-
-    # async def post_exploitation_downloadable(self, dto: Dict[str, Any]) -> str:
-    #     """
-    #     retrives a created launcher using an launcher_internal_id
-    #        raises ValueError in case of invalid dto
-    #        raises ConectionError in case of not be able to connect to c2 instance
-    #        raises ResourceNotFoundError
-
     #     example dto:
     #         {'c2_type': 'EmpireC2Type',
     #         'c2_options': [
@@ -608,33 +581,65 @@ class Service:
     #     """
     #     pass
 
-    async def get_available_post_exploitation_modules(self, dto: Dict[str, Any]) -> Dict[str,Any]:
+    async def post_exploitation_execute(self,\
+        post_exploit_dto: PostExploitExecuteDto,\
+        dto: RequestDto,\
+        ) -> str:
         """
-            retrives available post exploitation modules
-                raises ValueError in case of invalid dto
-                raises ConectionError in case of not be able to connect to c2 instance
-                raises ResourceNotFoundError
-        """
-        _c2_type = dto.get('c2_type')
-        current_c2_handler = self._c2types[_c2_type]
-        _c2_options = dto.get('c2_options')
-        current_c2 = current_c2_handler(_c2_options)
-
-        logger.debug('received dto: %r', dto)
-
-        _agent_type = dto.get('agent_type', 'powershell')
-        agent_types = await current_c2.get_agent_types()
-        logger.debug('available agent_types in c2 handler: ', agent_types)
-        agent_handler = agent_types[_agent_type]
-
+        retrives a created launcher using an launcher_internal_id
+           raises ValueError in case of invalid dto
+           raises ConectionError in case of not be able to connect to c2 instance
+           raises ResourceNotFoundError
+        example dto:
+            {'c2_type': 'EmpireC2Type',
+            'c2_options': [
+                    {
+                        "name": "url",
+                        "value": "https://127.0.0.1:7443"
+                    },
+                    {
+                        "name": "username",
+                        "value": "cobbr"
+                    },
+                    {
+                        "name": "password",
+                        "value": "NewPassword!"
+                    }
+                ],
+                'agent_internal_id': '123',
+                'module' : 'port_scan',
+                'options': [ {'name': 'target', 'ports':'80,8443'} ]
+                """
         try:
-            result_dto=  await asyncio.wait_for(agent_handler.get_available_post_exploitation_modules(), timeout=5.0)
-            response_dto = {}
-            response_dto.update(result_dto)
-            return response_dto
-        except asyncio.TimeoutError:
-            raise ConnectionError
+            c2_dto = dto.c2
+            if not c2_dto:
+                raise ValueError("invalid dto missing c2_dto")
+            if not c2_dto.c2_type:
+                raise ValueError("invalid dto missing c2_type")
+            current_c2_handler = self._c2types[c2_dto.c2_type]
+            current_c2 = current_c2_handler(c2_dto.options)
+
+            logger.debug("received dto: %r", dto)
+
+            shell_dto = dto.shell_execute
+            _agent_type = shell_dto.agent_shell_type
+            agent_types = await current_c2.get_agent_types()
+            logger.debug("available agent_types in c2 handler: ", agent_types)
+            agent_handler = agent_types[_agent_type]
+            try:
+                post_exploit = agent_handler.post_exploitation_types[post_exploit_dto.module]
+                result_dto = await asyncio.wait_for(
+                    # agent_handler.post_exploit_execute(post_exploit_dto), timeout=TIMEOUT
+                    post_exploit.execute(post_exploit_dto, dto),
+                    timeout=TIMEOUT
+                )
+                response_dto = {}
+                response_dto.update(result_dto or {})
+                return response_dto
+            except asyncio.TimeoutError:
+                raise ConnectionError
+            except KeyError as err:
+                raise ValueError("invalid_dto %r", err)
         except KeyError as err:
-            raise ValueError('invalid_dto %r',err)
-        except KeyError as err:
-            raise ValueError('Handler not found: {!r}'.format(err))
+            raise ValueError("Handler not found: {!r}".format(err))
+

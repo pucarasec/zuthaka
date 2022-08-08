@@ -351,22 +351,21 @@ class AgentConsumer(AsyncJsonWebsocketConsumer):
         response = {
             "type": "post_exploitation.execute.result.ok",
             "reference": task.command_ref,
+            "content": "Starting post-exploitation module"
         }
+        await self.send_json(response)
+
+        # response.update(result) # hack! this should be depending on the response; maybe send a reference to send a  callback
         # availables await self.agent.post_exploitation_available()
         result = await self.agent.post_exploitation_execute(
             event["id_module"], event.get("options", [])
         )
         # save_task_event?
-        response.update(result)
-        await self.send_json(response)
 
         response = {
             "type": "post_exploitation.execute.result.shell",
             "reference": task.command_ref,
         }
-        result = await self.agent.post_exploitation_retrieve(
-            event["id_module"], event.get("options", [])
-        )
         # save_task_event?
         await complete_task(task)
         if "content_url" in result:

@@ -34,6 +34,9 @@ class UploadFileDto(NamedTuple):
 class DownloadFileDto(NamedTuple):
     target_file: str
 
+class PostExploitExecuteDto(NamedTuple):
+    module: str
+    options: Dict[str, Any] = {}
 
 # service
 class C2InstanceDto(NamedTuple):
@@ -50,6 +53,7 @@ class RequestDto(NamedTuple):
     c2_instances: List[C2InstanceDto] = None
     upload_file: UploadFileDto = None
     download_file: DownloadFileDto = None
+    post_exploit: PostExploitExecuteDto = None
 
 
 # responses

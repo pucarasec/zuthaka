@@ -40,9 +40,6 @@ import ssl
 from urllib.parse import urlparse
 import logging
 
-# import signal
-# signal.signal(signal.SIGINT, self.exit_gracefully)
-# signal.signal(signal.SIGTERM, self.exit_gracefully)
 
 logger = logging.getLogger(__name__)
 
@@ -166,18 +163,6 @@ class SilentTriC2(C2):
         teamserver_url = options.get("teamserver_url")
         self.connection = ConnectionHandler(username, password, teamserver_url)
 
-        # try:
-        #     self.ws = async_to_sync(websockets.connect)(
-        #         url,
-        #         extra_headers=head,
-        #         ssl=ssl_context,
-        #         ping_interval=None,
-        #         ping_timeout=None
-        #     )
-        # except Exception as e:
-        #     logger.error(repr(e),stack_info=True)
-        #     self.ws = None
-
     async def is_alive(self, requestDto: RequestDto) -> ResponseDto:
         """
         tries to connect to the corresponding c2 and returns ResponseDto with successful_transaction in case fo success
@@ -247,7 +232,7 @@ class SilentTriC2(C2):
 
 
 class SilentTriHTTPListenerType(ListenerType):
-    name = "https-profile"
+    name = "https-profile (Silent Trinity)"
     description = "standard http listener, messages are delivered in enconded comment"
     registered_options = [
         OptionDesc(
@@ -381,7 +366,7 @@ class SilentTriHTTPListenerType(ListenerType):
 
 
 class SilentTriPowershellLauncherType(LauncherType):
-    name = "Powershell Launcher"
+    name = "Powershell Launcher (Silent Trinity)"
     description = (
         "Uses powershell.exe to launch Agent using [systemm.reflection.assemly::load()"
     )

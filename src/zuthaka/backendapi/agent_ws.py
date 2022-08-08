@@ -206,6 +206,11 @@ def collect_post_exploitation(agent_model):
     serializer_class = PostExploitationTypeSerializer(available_post_exploitation, many=True)
     return serializer_class.data
 
+@sync_to_async
+def obtain_post_exploit(id_module):
+    recovered_post_exploit = models.PostExploitationType.objects.get(id=id_module)
+    return recovered_post_exploit
+
 class AgentWs:
     """
     A simple implementation of the agent, that runs on the local server
@@ -347,67 +352,41 @@ class AgentWs:
 
     async def post_exploitation_available(self):
         available_list = await collect_post_exploitation(self.agent_model)
-        
+        logger.debug("available post_exploit:%r", available_list)
         return {"content": available_list}
 
-        # this should be db based
-        # available_list = [{
-        #     'name':'portScan',
-        #     'description':'Scan the target host for open ports',
-        #     'options_description':[
-        #             {
-        #             'name':'target',
-        #             'type': 'string',
-        #             'default_value':'127.0.0.1',
-        #             'description': 'Target to scan for open ports',
-        #             'example':'192.168.0.1',
-        #             'required':True
-        #             },
-        #             {
-        #             'name':'ports',
-        #             'type': 'string',
-        #             'default_value':'80,443,8080,8443',
-        #             'description': 'Ports to scan on the target',
-        #             'example':'1-65535',
-        #             'required':True
-        #             }
-        #         ],
-        #     'id_module': 1 },
-        #     {'name':'Screenshot',
-        #     'description':'take screenshot from computer',
-        #     'options_description':[
-        #             {
-        #             'name':'target',
-        #             'type': 'string',
-        #             'default_value':'127.0.0.1',
-        #             'description': 'Target to scan for open ports',
-        #             'example':'192.168.0.1',
-        #             'required':True
-        #             },
-        #           ],
-        #     'id_module': 1 },
-        #     ]
-
     async def post_exploitation_execute(self, id_module, options):
+        request_dto = copy(self.agent_dto)
+        # result = await post_exploit.generic_execute(options)
+        post_exploit = await obtain_post_exploit(id_module)
+        post_exploit_dto = PostExploitationTypeSerializer.\
+            to_dto_from_instance(post_exploit, options)
+        # logger.debug('[*] post_exploit_dto: {}'.post_exploit_dto)
+        # logger.debug('[*] request_dt: {}'.post_exploit_dto)
+        # request_dto.post_exploit = post_exploit_dto
+        service = Service.get_service()
+        result = await service.post_exploitation_execute(post_exploit_dto, request_dto)
+        return result
+
         # isinstance(pid, int) # to do safety check
-        content_1 = "Started PortScan"
-        result = "ComputerName   Port  IsOpen \
-------------   ----  ------ \
-192.168.0.245  3000  True"
-        modules = {
-            1: (("target", "ports"), {"content": content_1}),
-            2: ((), {"content_url": "http://127.0.0.1/download?task={}"}),
-        }
-        content_2 = "Started PortScan"
-        if id_module not in modules:
-            return {
-                "type": "post_exploitation.execute.result.error",
-                "content": "id_module not valid",
-            }
-        for required_option in modules[id_module][0]:
-            if required_option not in options:
-                return {
-                    "type": "post_exploitation.execute.result.error",
-                    "content": "missing required option: {}".format(required_option),
-                }
-        return modules[id_module][1]
+#         content_1 = "Started PortScan"
+#         result = "ComputerName   Port  IsOpen \
+# ------------   ----  ------ \
+# 192.168.0.245  3000  True"
+#         modules = {
+#             1: (("target", "ports"), {"content": content_1}),
+#             2: ((), {"content_url": "http://127.0.0.1/download?task={}"}),
+#         }
+#         content_2 = "Started PortScan"
+#         if id_module not in modules:
+#             return {
+#                 "type": "post_exploitation.execute.result.error",
+#                 "content": "id_module not valid",
+#             }
+#         for required_option in modules[id_module][0]:
+#             if required_option not in options:
+#                 return {
+#                     "type": "post_exploitation.execute.result.error",
+#                     "content": "missing required option: {}".format(required_option),
+#                 }
+#         return modules[id_module][1]

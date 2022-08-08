@@ -25,6 +25,7 @@ from .dtos import (
     RequestDto,
     C2InstanceDto,
     ShellExecuteDto,
+    PostExploitExecuteDto,
 )
 
 
@@ -591,8 +592,26 @@ class PostExploitationTypeOptionSerializer(serializers.ModelSerializer):
 class PostExploitationTypeSerializer(serializers.ModelSerializer):
     options = PostExploitationTypeOptionSerializer(many=True)
     # available_listeners = ListenersAvailableField(source="c2_type", read_only=True)
+    id_module = serializers.IntegerField(source="id")
+
 
     class Meta:
         model = ListenerType
         # fields = ("id", "name", "available_listeners", "description", "options")
-        fields = ("id", "name", "description", "options")
+        fields = ("id_module", "name", "description", "options")
+
+    @classmethod
+    def to_dto_from_instance(self, instance, options):
+        """
+        example dto:
+                'module' : 'port_scan',
+                'options': [ {'name': 'target', 'ports':'80,8443'} ]
+        """
+
+        dto = {}
+        try:
+            dto = PostExploitExecuteDto(module=instance.name, options=options )
+        except KeyError as err:
+            raise serializers.ValidationError(repr(err))
+        return dto
+

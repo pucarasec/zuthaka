@@ -3,3 +3,4 @@ from ..exceptions import ResourceExistsError, ResourceNotFoundError, Inconsisten
 
 from . import Covenant
 from . import SilentTrinity
+from . import Empire

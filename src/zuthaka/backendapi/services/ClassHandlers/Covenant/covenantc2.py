@@ -3,6 +3,7 @@ from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc, P
 from ....dtos import (
     AgentDto,
     CreateListenerDto,
+    PostExploitExecuteDto,
     RequestDto,
     ResponseDto,
     ShellExecuteDto,
@@ -141,7 +142,7 @@ class CovenantC2(C2):
 
 
 class CovenantHTTPListenerType(ListenerType):
-    name = "default-http-profile"
+    name = "default-http-profile (Covenant)"
     description = "standard http listener, messages are delivered in enconded comment"
     registered_options = [
         OptionDesc(
@@ -242,7 +243,7 @@ class CovenantHTTPListenerType(ListenerType):
 
 
 class CovenantPowershellLauncherType(LauncherType):
-    name = "Powershell Launcher"
+    name = "Powershell Launcher (Covenant)"
     description = (
         "Uses powershell.exe to launch Agent using [systemm.reflection.assemly::load()"
     )
@@ -260,11 +261,11 @@ class CovenantPowershellLauncherType(LauncherType):
         self._url = url
         self._c2 = _c2
         # should self._c2 be independent
-        self.post_exploitation_types = {
-            PortScan.name: PortScan(
-                # self.options["url"], self._c2
-            ),
-        }
+        # self.post_exploitation_types = {
+        #     PortScan.name: PortScan(
+        #         self.options["url"], self._c2
+        #     ),
+        # }
 
     async def create_and_retrieve_launcher(self, options: Options, dto: RequestDto):
         try:
@@ -308,7 +309,7 @@ class CovenantPowershellLauncherType(LauncherType):
             raise ConnectionError(err)
 
 class CovenantBinaryLauncherType(LauncherType):
-    name = "Binary Launcher"
+    name = "Binary Launcher (Covenant)"
     description = (
         "Uses GruntHTTP.exe to launch Agent. Uses a generated .NET35 Framework binary to launch a Grunt."
     )
@@ -371,7 +372,8 @@ class CovenantBinaryLauncherType(LauncherType):
 
 
 class PortScan(PostExploitationType):
-    name = "PortScan"
+    name = "PortScan (Covenant)"
+    type = "generic"
     description = 'Scan the target host for open ports'
     registered_options = [
         OptionDesc(
@@ -389,21 +391,75 @@ class PortScan(PostExploitationType):
             required=True,
         ),
     ]
-    def __init__(self,) -> None:
-        pass
+    
+    def __init__(self, url: str, _c2: CovenantC2) -> None:
+        self._url = url
+        self._c2 = _c2
 
-    async def generic_execute(self, Options):
-        return "test"
+    async def execute(self, post_expoit_dto: PostExploitExecuteDto, dto:RequestDto) -> bytes:
+        try:
+            headers = {"Authorization": "Bearer {}".format(await self._c2._get_token())}
+            target = "{}/api/grunts/{}/interact".format(
+                self._url, dto.shell_execute.agent_internal_id
+            )
+            options = post_expoit_dto.options
+            # PortScan /computernames:"192.168.174.128" /ports:"80,443,8000,8080,7443" /ping:""
+            interact_post_data = 'PortScan /computernames:"{}" /ports:"{}" /ping:""'.format(
+                options['target'],
+                options['ports'],
+            )
 
+            response_dto = {}
+            response_dto["header"] = self.name
+            command_output_id = ""
+            async with self._c2.get_session() as session:
+                async with session.post(
+                    target, json=interact_post_data, headers=headers
+                ) as response:
+                    command_response_json = await response.json()
+                    command_output_id = command_response_json.get("commandOutputId")
 
+            task_status_target = "{}/api/commands/{}".format(
+                self._url, command_output_id
+            )
+            for _ in range(40):
+                async with self._c2.get_session() as session:
+                    async with session.get(
+                        task_status_target, headers=headers
+                    ) as response:
+                        command_response_json = await response.json()
+                        status = command_response_json["gruntTasking"]["status"]
+                        if status == "completed":
+                            break
+                        else:
+                            await asyncio.sleep(1)
+            else:
+                raise ConnectionError("unable  to retrieve  task")
+            command_output_base_url = "{}/api/commandoutputs/{}".format(
+                self._url, command_output_id
+            )
+            async with self._c2.get_session() as session:
+                async with session.get(
+                    command_output_base_url, headers=headers
+                ) as response:
+                    command_response_json = await response.json()
+                    command_output = command_response_json["output"]
+                    response_dto["content"] = command_output
+            return response_dto
+        except aiohttp.client_exceptions.ClientConnectorError as err:
+            raise ConnectionError(err)
 
 class PowershellAgentType(AgentType):
     agent_shell_type = "powershell"
-    post_exploitation_types = [PortScan]
 
     def __init__(self, url: str, _c2: CovenantC2) -> None:
         self._url = url
         self._c2 = _c2
+        self.post_exploitation_types = {
+            PortScan.name: PortScan(
+                _c2.options["url"], self._c2
+            ),
+        }
 
     async def shell_execute(
         self, command: str, shell_dto: ShellExecuteDto, dto: RequestDto

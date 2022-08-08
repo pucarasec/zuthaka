@@ -173,7 +173,7 @@ class AgentType(ABC):
 class PostExploitationType(ABC):
      
     @abstractmethod
-    async def generic_execute(
+    async def execute(
         self, options: Options, dto: RequestDto
     ) -> str:
         raise NotImplementedError

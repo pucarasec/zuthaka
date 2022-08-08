@@ -36,10 +36,10 @@ class MalwareC2(C2):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._listener_types = {
-            MalwareListener.name: MalwareListener(self.options["url"], self),
+            MalwareListener.name + " (Malon)": MalwareListener(self.options["url"], self),
         }
         self._launcher_types = {
-            MalwareGenericLauncher.name: MalwareGenericLauncher(
+            MalwareGenericLauncher.name + " (Malon)": MalwareGenericLauncher(
                 self.options["url"], self
             ),
         }

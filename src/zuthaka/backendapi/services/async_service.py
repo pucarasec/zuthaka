@@ -26,7 +26,7 @@ from ..dtos import (
     PostExploitExecuteDto,
 )
 
-TIMEOUT = 20
+TIMEOUT = 25
 
 
 def filter_dict(original_dict, set_of_keys):

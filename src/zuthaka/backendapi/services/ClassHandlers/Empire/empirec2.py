@@ -3,6 +3,17 @@ from .. import ResourceExistsError, ResourceNotFoundError
 # from . import InconsistencyError
 # from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc, PostExploitationType
 from .. import C2, ListenerType, LauncherType, AgentType, Options, OptionDesc
+from ....dtos import (
+    AgentDto,
+    CreateListenerDto,
+    PostExploitExecuteDto,
+    RequestDto,
+    ResponseDto,
+    ShellExecuteDto,
+    DownloadFileDto,
+    UploadFileDto,
+)
+from ....dtos import CreateLauncherDto
 
 import asyncio
 import random
@@ -19,7 +30,7 @@ import io
 
 class EmpireC2(C2):
     name = "empire_integration"
-    description = "Integration demo for presentation"
+    description = "Integration demo for presentation v3.5.2"
     documentation = "https://github.com/BC-SECURITY/empire"
     registered_options = [
         OptionDesc(
@@ -64,7 +75,7 @@ class EmpireC2(C2):
             "powershell": PowershellAgentType(self.options["url"], self),
         }
 
-    async def get_session(self) -> aiohttp.ClientSession:
+    def get_session(self) -> aiohttp.ClientSession:
         return aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False))
 
     async def _get_token(self) -> str:
@@ -83,11 +94,13 @@ class EmpireC2(C2):
 
         return self._token
 
-    async def is_alive(self) -> bool:
+    async def is_alive(self, requestDto: RequestDto) -> ResponseDto:
         try:
-            await self._get_token()
+            logger.debug("requestDto: %s", requestDto)
+            token = await self._get_token()
+            response = ResponseDto(successful_transaction=bool(token))
+            return response
         except aiohttp.InvalidURL as er:
-
             raise ValueError(repr(er))
         except aiohttp.ClientError as er:
             if hasattr(er, "code") and er.code == 400:
@@ -106,7 +119,7 @@ class EmpireC2(C2):
     async def retrieve_agents(self, dto: Dict[str, Any]) -> bytes:
         try:
 
-            params = {"token": await self._c2.get_token()}
+            params = {"token": await self._c2._get_token()}
             target = "{}/api/listeners/http".format(self._url)
 
             response_dto = {"agents": []}
@@ -161,7 +174,8 @@ class EmpireHTTPListenerType(ListenerType):
         self._url = url
         self._c2 = _c2
 
-    async def create_listener(self, options: Options) -> Dict:
+    async def create_listener(self, options: Options, dto: RequestDto) -> Dict:
+
         logger.debug("[*] options:", options)
         host = options.get("host", "")
         port = options.get("port", "")
@@ -181,17 +195,24 @@ class EmpireHTTPListenerType(ListenerType):
             "Host": host,
             "DefaultDelay": host,
         }
+
         try:
-            params = {"token": await self._c2.get_token()}
+            params = {"token": await self._c2._get_token()}
             target = "{}/api/listeners/http".format(self._url)
             async with self._c2.get_session() as session:
-                async with session.get(target, params=params) as response:
+                async with session.post(target, params=params, json=post_dict) as response:
                     text = await response.text()
                     if response.ok:
                         options = await response.json()
                         if options["success"]:
-                            response_dto = {}
-                            response_dto["listener_internal_id"] = listener_name
+
+                            created_listener = CreateListenerDto(
+                                listener_internal_id=listener_name, listener_options=options
+                            )
+                            response_dto = ResponseDto(
+                                successful_transaction=True,
+                                created_listener=created_listener,
+                            )
                             return response_dto
                         else:
                             raise ResourceExistsError(
@@ -219,6 +240,11 @@ class EmpireHTTPListenerType(ListenerType):
                     )
 
 
+
+
+
+
+
 class EmpireDllLauncherType(LauncherType):
     name = "Dll Launcher (Empire)"
     description = "Generate a PowerPick Reflective DLL to inject with stager code."
@@ -236,59 +262,133 @@ class EmpireDllLauncherType(LauncherType):
         self._url = url
         self._c2 = _c2
 
-    async def create_launcher(self, dto: Dict[str, Any]) -> str:
-        arch = dto.get("arch", "x64")
+    async def create_and_retrieve_launcher(self, options: Options, dto: RequestDto):
         try:
-            params = {"token": await self._c2.get_token()}
-            target = "{}/api/stagers/dll".format(self._url)
-            listener_id = dto.get("listener_internal_id")
+            params = {"token": await self._c2._get_token()}
+            # target = "{}/api/stagers/dll".format(self._url)
+            target = "{}/api/stagers".format(self._url)
+            listener_id = dto.listener.listener_internal_id
+            arch = options.get("arch", "x64")
 
             launcher_name = "Zuthaka-" + "".join(
                 random.choice(string.ascii_uppercase + string.digits) for _ in range(10)
             )
             creation_dict = {
                 "Listener": listener_id,
-                "StagerName": launcher_name,
+                "StagerName": "windows/dll",
                 "Arch": arch,
             }
             async with self._c2.get_session() as session:
                 async with session.post(
                     target, params=params, json=creation_dict
                 ) as response:
-                    text = await response.text()
-                    response_dto = {}
-                    response_dto["launcher_internal_id"] = ""
-                    response_dto["launcher_options"] = await response.json()
-                    return response_dto
-        except aiohttp.client_exceptions.ClientConnectorError as err:
-            raise ConnectionError(err)
-
-    async def download_launcher(self, dto: Dict[str, Any]) -> IO:
-        arch = dto.get("arch", "x64")
-        try:
-            params = {"token": await self._c2.get_token()}
-            target = "{}/api/stagers/dll".format(self._url)
-            listener_id = dto.get("listener_internal_id")
-
-            launcher_name = "Zuthaka-" + "".join(
-                random.choice(string.ascii_uppercase + string.digits) for _ in range(10)
-            )
-            creation_dict = {
-                "Listener": listener_id,
-                "StagerName": launcher_name,
-                "Arch": arch,
-            }
-            async with self._c2.get_session() as session:
-                async with session.post(
-                    target, params=params, json=creation_dict
-                ) as response:
+                    # text = await response.text()
+                    # response_dto = {}
+                    # response_dto["launcher_internal_id"] = ""
+                    # response_dto["launcher_options"] = await response.json()
+                    # launcher_internal_id = ""
+                    # launcher_options = await response.json()
+                    # return response_dto
                     response_dict = await response.json()
                     logger.debug("[*] response_dict: %r ", response_dict.keys())
-                    response_dto["payload_content"] = response_dict["Output"]
-                    response_dto["payload_name"] = "launcher.dll"
+
+                    payload_content = response_dict['windows/dll']["Output"]
+                    payload_name = "launcher.dll"
+                    created_dto = CreateLauncherDto(
+                        launcher_internal_id="",
+                        payload_content=payload_content,
+                        payload_name=payload_name,
+                        launcher_options=options
+                    )
+                    response_dto = ResponseDto(
+                        successful_transaction=True, created_launcher=created_dto
+                    )
+                    logger.debug("[*] payload_name: %r ", payload_name)
                     return response_dto
         except aiohttp.client_exceptions.ClientConnectorError as err:
             raise ConnectionError(err)
+
+        # target = "{}/api/stagers/windows/dll".format(self._url)
+        # try:
+        #     async with self._c2.get_session() as session:
+        #         async with session.get(
+        #             target, params=params
+        #         ) as response:
+        #             response_dict = await response.json()
+        #             logger.debug("[*] response_dict: %r ", response_dict.keys())
+        #             # response_dto["payload_content"] = response_dict["Output"]
+        #             # response_dto["payload_name"] = "launcher.dll"
+
+        #             payload_content = response_dict["Output"]
+        #             payload_name = response_dict["name"] + ".dll"
+        #             created_dto = CreateLauncherDto(
+        #                 launcher_internal_id="",
+        #                 payload_content=payload_content,
+        #                 payload_name=payload_name,
+        #                 launcher_options=launcher_options,
+        #             )
+        #             response_dto = ResponseDto(
+        #                 successful_transaction=True, created_launcher=created_dto
+        #             )
+        #             logger.debug("[*] payload_name: %r ", response_dict["name"])
+        #             return response_dto
+        # except aiohttp.client_exceptions.ClientConnectorError as err:
+        #     raise ConnectionError(err)
+
+
+    # async def create_launcher(self, dto: Dict[str, Any]) -> str:
+    #     arch = dto.get("arch", "x64")
+    #     try:
+    #         params = {"token": await self._c2.get_token()}
+    #         target = "{}/api/stagers/dll".format(self._url)
+    #         listener_id = dto.get("listener_internal_id")
+
+    #         launcher_name = "Zuthaka-" + "".join(
+    #             random.choice(string.ascii_uppercase + string.digits) for _ in range(10)
+    #         )
+    #         creation_dict = {
+    #             "Listener": listener_id,
+    #             "StagerName": launcher_name,
+    #             "Arch": arch,
+    #         }
+    #         async with self._c2.get_session() as session:
+    #             async with session.post(
+    #                 target, params=params, json=creation_dict
+    #             ) as response:
+    #                 text = await response.text()
+    #                 response_dto = {}
+    #                 response_dto["launcher_internal_id"] = ""
+    #                 response_dto["launcher_options"] = await response.json()
+    #                 return response_dto
+    #     except aiohttp.client_exceptions.ClientConnectorError as err:
+    #         raise ConnectionError(err)
+
+    # async def download_launcher(self, dto: Dict[str, Any]) -> IO:
+    #     arch = dto.get("arch", "x64")
+    #     try:
+    #         params = {"token": await self._c2.get_token()}
+    #         target = "{}/api/stagers/dll".format(self._url)
+    #         listener_id = dto.get("listener_internal_id")
+
+    #         launcher_name = "Zuthaka-" + "".join(
+    #             random.choice(string.ascii_uppercase + string.digits) for _ in range(10)
+    #         )
+    #         creation_dict = {
+    #             "Listener": listener_id,
+    #             "StagerName": launcher_name,
+    #             "Arch": arch,
+    #         }
+    #         async with self._c2.get_session() as session:
+    #             async with session.post(
+    #                 target, params=params, json=creation_dict
+    #             ) as response:
+    #                 response_dict = await response.json()
+    #                 logger.debug("[*] response_dict: %r ", response_dict.keys())
+    #                 response_dto["payload_content"] = response_dict["Output"]
+    #                 response_dto["payload_name"] = "launcher.dll"
+    #                 return response_dto
+    #     except aiohttp.client_exceptions.ClientConnectorError as err:
+    #         raise ConnectionError(err)
 
 
 class PowershellAgentType(AgentType):

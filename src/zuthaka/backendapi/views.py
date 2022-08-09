@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import SessionAuthentication
 from django_filters import rest_framework as filters
 import os
+from base64 import b64decode
 import logging
 
 logger = logging.getLogger(__name__)
@@ -226,9 +227,14 @@ class LaunchersViewSet(EnablePartialUpdateMixin, ModelViewSet):
                 launcher_type=validated_data["launcher_type"],
                 launcher_internal_id=launcher_created_dto["launcher_internal_id"],
             )
+            payload_name = launcher_created_dto["payload_name"]
+            payload_content = launcher_created_dto["payload_content"]
+            if payload_name.endswith('.b64'):
+                payload_name = payload_name[:-4]
+                payload_content = b64decode(payload_content)
             new_launcher.launcher_file.save(
-                launcher_created_dto["payload_name"],
-                ContentFile(launcher_created_dto["payload_content"]),
+                payload_name,
+                ContentFile(payload_content),
                 save=True,
             )
             # data =  serializer.validated_data

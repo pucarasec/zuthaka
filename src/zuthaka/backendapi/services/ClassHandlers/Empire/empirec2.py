@@ -225,23 +225,23 @@ class EmpireHTTPListenerType(ListenerType):
         except aiohttp.client_exceptions.ClientConnectorError as err:
             raise ConnectionError(err)
 
-    async def delete_listener(self, internal_id: str, options: Options) -> None:
-        params = {"token": await self._c2.get_token()}
-        target = "{}/api/listeners/{}".format(self._url, listener_id)
-        async with self.get_session() as session:
+
+    async def delete_listener(
+        self, internal_id: str, options: Options, dto: RequestDto
+    ) -> None:
+        params = {"token": await self._c2._get_token()}
+        target = "{}/api/listeners/{}".format(self._url, internal_id)
+        async with self._c2.get_session() as session:
             async with session.delete(target, params=params) as response:
-                result = await response.text
+                result = await response.text()
                 logger.error("[*] result: %r ", result)
                 if response.ok:
-                    return
+                    response_dto = ResponseDto(successful_transaction=True)
+                    return response_dto
                 else:
                     raise ResourceNotFoundError(
                         "Error fetching listeners: {}".format(result)
                     )
-
-
-
-
 
 
 
@@ -293,7 +293,7 @@ class EmpireDllLauncherType(LauncherType):
                     logger.debug("[*] response_dict: %r ", response_dict.keys())
 
                     payload_content = response_dict['windows/dll']["Output"]
-                    payload_name = "launcher.dll"
+                    payload_name = "launcher.dll.b64"
                     created_dto = CreateLauncherDto(
                         launcher_internal_id="",
                         payload_content=payload_content,

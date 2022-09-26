@@ -138,7 +138,7 @@ Distributed under the BSD-3 clause License. See `LICENSE.md` for more informatio
 
 <img src="https://avatars.githubusercontent.com/u/67703668?s=400&u=28a46c2f743e9c05c89136ff6c57a8100e4ac261&v=4" width=100 height=100 align="left">
 
-Pucara team - [@pucara](https://twitter.com/pucara) - contant@pucara.io
+Pucara team - [@pucara](https://twitter.com/pucara) - contact@pucara.io
 
 Zuthaka community on discord - [Zuthaka](https://zuthaka.com/discord)
 

@@ -14,7 +14,7 @@ ENV DJANGO_SECRET_KEY $DJANGO_SECRET_KEY
 ENV DJANGO_CORS_ORIGIN_WHITELIST $DJANGO_CORS_ORIGIN_WHITELIST
 
 WORKDIR /Zuthaka/
-RUN apt-get update && apt-get install gcc vim apt-utils -y  && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install gcc vim apt -y  && apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN python3 -m pip install --upgrade pip
 
 RUN useradd -ms /bin/bash pucara 

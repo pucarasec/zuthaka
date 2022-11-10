@@ -97,7 +97,7 @@ The installation of a working Docker instance is necessary for the automatic dep
 
 To build the full Zuthaka project, first download dependencies.
 ```
- git clone https://github.com/pucara/zuthaka
+ git clone https://github.com/pucarasec/zuthaka/
 ```
 
 To start the project with the corresponding services, the docker-compose file can be utilized.
